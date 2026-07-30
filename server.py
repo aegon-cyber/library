@@ -437,20 +437,5 @@ def index():
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5050))
-    # Try gunicorn first (Linux), fall back to waitress
-    try:
-        from gunicorn.app.base import BaseApplication
-        class GunicornApp(BaseApplication):
-            def __init__(self, app, port):
-                self.application = app
-                self.port = port
-                super().__init__()
-            def load_config(self):
-                self.cfg.set('bind', f'0.0.0.0:{self.port}')
-                self.cfg.set('workers', 1)
-            def load(self):
-                return self.application
-        GunicornApp(app, port).run()
-    except ImportError:
-        from waitress import serve
-        serve(app, host="0.0.0.0", port=port)
+    from waitress import serve
+    serve(app, host="0.0.0.0", port=port, threads=2)
