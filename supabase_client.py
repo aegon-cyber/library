@@ -108,14 +108,15 @@ def search_similar(
     Returns:
         list[dict]: _
     """
-    supabase = get_supabase()
+    import httpx
+    base = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
 
     rpc_params = {
         "query_embedding": query_embedding,
         "match_threshold": match_threshold,
         "match_count": top_n,
     }
-
     if filters:
         if "uploader" in filters:
             rpc_params["filter_uploader"] = filters["uploader"]
@@ -124,15 +125,30 @@ def search_similar(
         if "date_to" in filters:
             rpc_params["filter_date_to"] = filters["date_to"]
 
-    result = supabase.rpc("match_images", rpc_params).execute()
-    return [dict(r) for r in (result.data or [])]
+    r = httpx.post(
+        f"{base}/rest/v1/rpc/match_images",
+        headers={"apikey": key, "Authorization": f"Bearer {key}",
+                 "Content-Type": "application/json"},
+        json=rpc_params,
+    )
+    r.raise_for_status()
+    return [dict(item) for item in r.json()]
 
 
 def count_images() -> int:
-    """_"""
-    supabase = get_supabase()
-    result = supabase.table("images").select("id", count="exact").execute()
-    return result.count or 0
+    """Return total image count via raw REST (bypasses supabase-py encoding)."""
+    import httpx
+    base = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
+    r = httpx.get(f"{base}/rest/v1/images", headers={
+        "apikey": key, "Authorization": f"Bearer {key}",
+        "Prefer": "count=exact"
+    }, params={"select": "id", "limit": 0})
+    # PostgREST returns count in Content-Range header
+    cr = r.headers.get("content-range", "")
+    if cr and "/" in cr:
+        return int(cr.rsplit("/", 1)[-1])
+    return 0
 
 
 def clear_all() -> int:
