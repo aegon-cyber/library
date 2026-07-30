@@ -202,23 +202,23 @@ def upload_to_storage(bucket: str, local_path: Path, remote_name: Optional[str] 
     Returns:
         str: _ URL_
     """
-    supabase = get_supabase()
+    import httpx
+    base = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
 
     if remote_name is None:
         remote_name = _safe_storage_name(local_path.name)
 
     with open(local_path, "rb") as f:
-        supabase.storage.from_(bucket).upload(
-            path=remote_name,
-            file=f,
-            file_options={
-                "content-type": _guess_mime(local_path),
-                "x-upsert": "true",  # _
-            },
+        r = httpx.post(
+            f"{base}/storage/v1/object/{bucket}/{remote_name}",
+            headers={"apikey": key, "Authorization": f"Bearer {key}",
+                     "x-upsert": "true"},
+            content=f.read(),
         )
+    r.raise_for_status()
 
-    public_url = supabase.storage.from_(bucket).get_public_url(remote_name)
-    return public_url
+    return f"{base}/storage/v1/object/public/{bucket}/{remote_name}"
 
 
 def _safe_storage_name(filename: str) -> str:
