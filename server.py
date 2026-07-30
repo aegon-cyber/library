@@ -159,13 +159,13 @@ _logging.getLogger('werkzeug').setLevel(_logging.ERROR)
 def _handle_process():
     # ── 先提取文件 ──
     if "file" not in request.files:
-        return jsonify({"error": "缺少 file 字段"}), 400
+        return jsonify({"error": "No file field in request"}), 400
 
     file = request.files["file"]
     uploader = request.form.get("uploader", "test_user")
 
     if not file.filename:
-        return jsonify({"error": "文件名为空"}), 400
+        return jsonify({"error": "Empty filename"}), 400
 
     # Sanitize filename for safe temp storage
     fn = file.filename.rsplit('/', 1)[-1].rsplit('\\', 1)[-1]
@@ -223,10 +223,10 @@ def _handle_process():
                         uploader = uploader[:-2]
 
     if not file_data or file_data == raw_data:
-        return jsonify({"error": "无法提取文件内容"}), 400
+        return jsonify({"error": "Cannot extract file content"}), 400
 
     if fn == '':
-        return jsonify({"error": "文件名为空"}), 400
+        return jsonify({"error": "Empty filename"}), 400
 
     extra_description = None  # multipart 里可能有
 
@@ -306,7 +306,7 @@ print("__OK__" + json.dumps(result, ensure_ascii=False))
     # ── 图片分支 ──
     img_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
     if suffix not in img_exts:
-        return jsonify({"error": f"不支持的文件格式: {suffix}"}), 400
+        return jsonify({"error": f"Unsupported file type: {suffix}"}), 400
 
     try:
         # 1. 生成缩略图
@@ -367,7 +367,7 @@ def api_search():
     top_n = body.get("top_n", 10)
 
     if not raw_query:
-        return jsonify({"error": "缺少 query 参数"}), 400
+        return jsonify({"error": "Missing query parameter"}), 400
 
     # 1. LLM 解析自然语言 → 提取过滤条件
     parsed = parse_query(raw_query)
