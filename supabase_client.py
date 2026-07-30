@@ -160,16 +160,15 @@ def count_images() -> int:
         headers={
             "apikey": key, "Authorization": f"Bearer {key}",
             "Prefer": "count=exact",
-            "Range-Unit": "items",
-            "Range": "0-0",
         },
         params={"select": "id"},
     )
-    # PostgREST returns count in Content-Range header: "0-0/86"
+    r.raise_for_status()
+    # PostgREST returns count in Content-Range header when Prefer: count=exact
     cr = r.headers.get("content-range", "")
     if cr and "/" in cr:
         return int(cr.rsplit("/", 1)[-1])
-    return 0
+    return len(r.json())  # fallback: count returned rows
 
 
 def clear_all() -> int:
