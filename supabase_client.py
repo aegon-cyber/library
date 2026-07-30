@@ -74,12 +74,18 @@ def add_image(image_info: dict) -> dict:
 
 
 def get_all_images() -> list[dict]:
-    """_ embedding_"""
-    supabase = get_supabase()
-    result = supabase.table("images").select(
-        "id, file_name, file_path, thumbnail_path, uploader, upload_time, description, extra_description, source_file, source_url, duplicate_of"
-    ).order("id", desc=False).execute()
-    return [dict(r) for r in (result.data or [])]
+    """Fetch all images via raw REST."""
+    import httpx
+    base = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
+    cols = "id,file_name,file_path,thumbnail_path,uploader,upload_time,description,extra_description,source_file,source_url,duplicate_of"
+    r = httpx.get(
+        f"{base}/rest/v1/images",
+        headers={"apikey": key, "Authorization": f"Bearer {key}"},
+        params={"select": cols, "order": "id.asc"},
+    )
+    r.raise_for_status()
+    return [dict(item) for item in r.json()]
 
 
 def get_image_by_id(image_id: int) -> Optional[dict]:
