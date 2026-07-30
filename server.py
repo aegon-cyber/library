@@ -65,7 +65,17 @@ def _err(e):
     return jsonify({"error": str(e), "trace": [l for l in tb[-12:] if l.strip()]}), 500
 
 app = Flask(__name__, static_folder=None)
-app.json.ensure_ascii = True  # Force ASCII-safe JSON on all platforms
+
+# Force ALL JSON output to ASCII-safe (Flask 3.x compat)
+from flask.json.provider import DefaultJSONProvider
+import json as _stdlib_json
+class _ASCIIProvider(DefaultJSONProvider):
+    @staticmethod
+    def dumps(obj, **kw):
+        kw.setdefault('ensure_ascii', True)
+        return _stdlib_json.dumps(obj, **kw)
+app.json = _ASCIIProvider(app)
+
 CORS(app)
 
 # ── Global traceback reporter ──
