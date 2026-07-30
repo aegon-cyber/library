@@ -30,8 +30,8 @@ from supabase import create_client, Client
 
 load_dotenv()
 
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+SUPABASE_URL = (os.getenv("SUPABASE_URL") or "").strip()
+SUPABASE_KEY = (os.getenv("SUPABASE_KEY") or "").strip()
 
 if not SUPABASE_URL or not SUPABASE_KEY:
     raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set in .env")
@@ -83,8 +83,8 @@ def add_image(image_info: dict) -> dict:
 def get_all_images() -> list[dict]:
     """Fetch all images via raw REST."""
     import httpx
-    base = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
+    base = (os.getenv("SUPABASE_URL") or "").strip()
+    key = (os.getenv("SUPABASE_KEY") or "").strip()
     cols = "id,file_name,file_path,thumbnail_path,uploader,upload_time,description,extra_description,source_file,source_url,duplicate_of"
     r = httpx.get(
         f"{base}/rest/v1/images",
@@ -122,8 +122,8 @@ def search_similar(
         list[dict]: _
     """
     import httpx
-    base = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
+    base = (os.getenv("SUPABASE_URL") or "").strip()
+    key = (os.getenv("SUPABASE_KEY") or "").strip()
 
     rpc_params = {
         "query_embedding": query_embedding,
@@ -153,8 +153,8 @@ def search_similar(
 def count_images() -> int:
     """Return total image count via raw REST (bypasses supabase-py encoding)."""
     import httpx
-    base = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
+    base = (os.getenv("SUPABASE_URL") or "").strip()
+    key = (os.getenv("SUPABASE_KEY") or "").strip()
     r = httpx.get(
         f"{base}/rest/v1/images",
         headers={
