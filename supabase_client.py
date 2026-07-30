@@ -15,6 +15,13 @@ from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
+# Monkey-patch httpx to use UTF-8 for header encoding (Render Linux fix)
+import httpx as _httpx
+_orig_normalize = _httpx._models._normalize_header_value
+def _utf8_normalize(value, encoding=None):
+    return _orig_normalize(value, encoding="utf-8")
+_httpx._models._normalize_header_value = _utf8_normalize
+
 if sys.stdout.encoding != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
