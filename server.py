@@ -307,14 +307,14 @@ print("__OK__" + json.dumps(result, ensure_ascii=False))
         # 4. [CN] Supabase DB
         upload_time = datetime.now().isoformat()
         result = db_add_image({
-            "file_name": safe_name,
+            "file_name": fn,
             "file_path": file_url,
             "thumbnail_path": thumb_url,
             "uploader": uploader,
             "upload_time": upload_time,
             "description": description,
             "extra_description": extra_description,
-            "source_file": safe_name,
+            "source_file": fn,
             "source_url": file_url,
             "embedding": embedding,
         })
@@ -322,7 +322,7 @@ print("__OK__" + json.dumps(result, ensure_ascii=False))
         return jsonify({
             "type": "image",
             "id": result.get("id"),
-            "file_name": safe_name,
+            "file_name": fn,
             "file_url": file_url,
             "thumbnail_url": thumb_url,
             "description": description,
