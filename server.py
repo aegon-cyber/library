@@ -421,10 +421,18 @@ def api_list_images():
 # 静态文件
 # ============================================================
 
+@app.route("/upload-web/")
+def upload_web_index():
+    return send_from_directory(str(BASE_DIR / "upload-web"), "index.html")
+
 @app.route("/upload-web/<path:filename>")
 def serve_upload_web(filename):
     return send_from_directory(str(BASE_DIR / "upload-web"), filename)
 
+
+@app.route("/query-web/")
+def query_web_index():
+    return send_from_directory(str(BASE_DIR / "query-web"), "index.html")
 
 @app.route("/query-web/<path:filename>")
 def serve_query_web(filename):
