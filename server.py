@@ -447,8 +447,8 @@ def index():
     return """
     <h1>Library Agent</h1>
     <ul>
-        <li><a href="/upload-web/">📤 上传图片</a></li>
-        <li><a href="/query-web/">🔍 搜索图片</a></li>
+        <li><a href="/upload-web/">Upload</a></li>
+        <li><a href="/query-web/">Search</a></li>
     </ul>
     """
 
