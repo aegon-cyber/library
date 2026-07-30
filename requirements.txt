@@ -9,3 +9,4 @@ PyMuPDF
 httpx
 sniffio
 waitress
+gunicorn
