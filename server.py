@@ -408,6 +408,41 @@ def api_search():
         return jsonify({"error": str(e)}), 500
 
 
+@app.route("/api/debug", methods=["GET"])
+def api_debug():
+    """测试各组件"""
+    results = {}
+    # 1. Supabase
+    try:
+        from supabase_client import count_images
+        results["supabase"] = f"OK ({count_images()} images)"
+    except Exception as e:
+        results["supabase"] = f"FAIL: {e}"
+    # 2. ZhipuAI embedding
+    try:
+        from upload_test import get_embedding
+        emb = get_embedding("test")
+        results["zhipuai_embed"] = f"OK (dim={len(emb)})"
+    except Exception as e:
+        results["zhipuai_embed"] = f"FAIL: {e}"
+    # 3. ZhipuAI vision
+    try:
+        resp = client.chat.completions.create(model=VISION_MODEL, messages=[{"role":"user","content":"Say hi"}])
+        results["zhipuai_vision"] = "OK"
+    except Exception as e:
+        results["zhipuai_vision"] = f"FAIL: {e}"
+    # 4. RPC
+    try:
+        from upload_test import get_embedding
+        from supabase_client import search_similar as db_search
+        emb = get_embedding("test")
+        r = db_search(emb, top_n=1)
+        results["pgvector_rpc"] = f"OK ({len(r)} results)"
+    except Exception as e:
+        results["pgvector_rpc"] = f"FAIL: {e}"
+    return jsonify(results)
+
+
 @app.route("/api/images", methods=["GET"])
 def api_list_images():
     """获取所有已索引图片"""
