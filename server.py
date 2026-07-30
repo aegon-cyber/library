@@ -167,9 +167,12 @@ def _handle_process():
     if not file.filename:
         return jsonify({"error": "文件名为空"}), 400
 
-    # 文件名去特殊字符，避免 Windows GBK 编码问题（® 等）
+    # Sanitize filename for safe temp storage
     fn = file.filename.rsplit('/', 1)[-1].rsplit('\\', 1)[-1]
-    safe_fn = fn.encode('ascii', errors='replace').decode('ascii').replace('?', '')
+    try:
+        safe_fn = fn.encode('ascii', errors='replace').decode('ascii').replace('?', '')
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        safe_fn = fn.encode('utf-8', errors='replace').decode('ascii', errors='replace').replace('?', '')
     if not safe_fn or not safe_fn.strip('._-'):
         import hashlib
         safe_fn = 'upload_' + hashlib.md5(fn.encode('utf-8')).hexdigest()[:8]
