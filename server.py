@@ -414,6 +414,15 @@ def serve_upload_web(filename):
 def query_web_index():
     return send_from_directory(str(BASE_DIR / "query-web"), "index.html")
 
+@app.route("/library-web/")
+def library_web_index():
+    return send_from_directory(str(BASE_DIR / "library-web"), "index.html")
+
+@app.route("/library-web/<path:filename>")
+def serve_library_web(filename):
+    return send_from_directory(str(BASE_DIR / "library-web"), filename)
+
+
 @app.route("/query-web/<path:filename>")
 def serve_query_web(filename):
     return send_from_directory(str(BASE_DIR / "query-web"), filename)
@@ -426,6 +435,7 @@ def index():
     <ul>
         <li><a href="/upload-web/">Upload</a></li>
         <li><a href="/query-web/">Search</a></li>
+        <li><a href="/library-web/">Library</a></li>
     </ul>
     """
 
