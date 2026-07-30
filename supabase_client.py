@@ -155,11 +155,17 @@ def count_images() -> int:
     import httpx
     base = os.getenv("SUPABASE_URL")
     key = os.getenv("SUPABASE_KEY")
-    r = httpx.get(f"{base}/rest/v1/images", headers={
-        "apikey": key, "Authorization": f"Bearer {key}",
-        "Prefer": "count=exact"
-    }, params={"select": "id", "limit": 0})
-    # PostgREST returns count in Content-Range header
+    r = httpx.get(
+        f"{base}/rest/v1/images",
+        headers={
+            "apikey": key, "Authorization": f"Bearer {key}",
+            "Prefer": "count=exact",
+            "Range-Unit": "items",
+            "Range": "0-0",
+        },
+        params={"select": "id"},
+    )
+    # PostgREST returns count in Content-Range header: "0-0/86"
     cr = r.headers.get("content-range", "")
     if cr and "/" in cr:
         return int(cr.rsplit("/", 1)[-1])
