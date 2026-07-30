@@ -57,13 +57,25 @@ from supabase_client import (
 from datetime import datetime
 import json as _json
 
+import traceback as _tb
+
+def _err(e):
+    """Return a JSON 500 with traceback."""
+    tb = _tb.format_exc().split('\n')
+    return jsonify({"error": str(e), "trace": [l for l in tb[-12:] if l.strip()]}), 500
+
 app = Flask(__name__, static_folder=None)
 CORS(app)
 
-# ── Windows GBK [CN] ──
-@app.errorhandler(UnicodeEncodeError)
-def handle_gbk_error(e):
-    return jsonify({"error": "Server encoding error, please try again"}), 500
+# ── Global traceback reporter ──
+@app.errorhandler(500)
+@app.errorhandler(Exception)
+def handle_all_errors(e):
+    tb_lines = _tb.format_exc().split('\\n')
+    return jsonify({
+        "error": str(e),
+        "traceback": [l for l in tb_lines[-15:] if l.strip()],
+    }), 500
 
 
 # [CN]
@@ -255,7 +267,7 @@ def _handle_process():
         except Exception as e:
             import traceback
             traceback.print_exc()
-            return jsonify({"error": str(e)}), 500
+            return _err(e)
 
     # ── DOCX [CN] Windows GBK [CN]──
     if suffix == ".docx":
@@ -295,7 +307,7 @@ print("__OK__" + json.dumps(result, ensure_ascii=False))
             else:
                 return jsonify({"error": f"Worker failed: {(out + proc.stderr)[:300]}"}), 500
         except Exception as e:
-            return jsonify({"error": str(e)}), 500
+            return _err(e)
         finally:
             # [CN]
             try: args_file.unlink()
@@ -356,7 +368,7 @@ print("__OK__" + json.dumps(result, ensure_ascii=False))
         })
 
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _err(e)
 
 
 @app.route("/api/search", methods=["POST"])
@@ -405,7 +417,7 @@ def api_search():
             "results": results,
         })
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _err(e)
 
 
 @app.route("/api/debug", methods=["GET"])
@@ -450,7 +462,7 @@ def api_list_images():
         images = db_get_all_images()
         return jsonify(images)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        return _err(e)
 
 
 # ============================================================
