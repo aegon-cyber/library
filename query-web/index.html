@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>🔍 图片搜索 — Library Agent</title>
+<style>
+  :root {
+    --bg: #0f0f0f; --card: #1a1a1a; --border: #2a2a2a;
+    --text: #e0e0e0; --muted: #888; --accent: #3ecf8e;
+    --accent-dim: #2a5f3f; --warn: #f0c040;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: var(--bg); color: var(--text);
+    display: flex; justify-content: center;
+    min-height: 100vh; padding: 40px 20px;
+  }
+  .container { width: 100%; max-width: 700px; }
+  h1 { font-size: 1.5rem; margin-bottom: 8px; }
+  .subtitle { color: var(--muted); margin-bottom: 32px; font-size: 0.9rem; }
+  .nav { display:flex; gap:12px; margin-bottom: 24px; }
+  .nav a {
+    color: var(--muted); text-decoration:none; padding:6px 12px;
+    border:1px solid var(--border); border-radius:6px; font-size:0.85rem;
+  }
+  .nav a.active { color: var(--accent); border-color: var(--accent-dim); background: #1a2a22; }
+
+  .search-box { display: flex; gap: 8px; margin-bottom: 10px; }
+  .search-box input {
+    flex: 1; padding: 12px 16px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 8px;
+    color: var(--text); font-size: 1rem; outline: none;
+  }
+  .search-box input:focus { border-color: var(--accent); }
+  .search-box button {
+    padding: 12px 24px; background: var(--accent); color: #000;
+    border: none; border-radius: 8px; font-weight: 600; cursor: pointer;
+    font-size: 0.95rem; white-space: nowrap;
+  }
+  .search-box button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .hint {
+    font-size: 0.8rem; color: #555; margin-bottom: 16px; line-height: 1.6;
+  }
+  .hint em { color: var(--accent-dim); font-style: normal; }
+
+  .parsed-tags {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+  }
+  .parsed-tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 4px 10px; border-radius: 20px;
+    font-size: 0.78rem; background: #1a2a22;
+    border: 1px solid var(--accent-dim); color: var(--accent);
+  }
+  .parsed-tag .label { color: var(--muted); font-size: 0.7rem; }
+
+  .meta { color: var(--muted); font-size: 0.8rem; margin-bottom: 16px; }
+
+  .result-card {
+    display: flex; gap: 16px; background: var(--card);
+    border: 1px solid var(--border); border-radius: 12px;
+    padding: 16px; margin-bottom: 12px; transition: border-color .2s;
+  }
+  .result-card:hover { border-color: #444; }
+  .result-card img {
+    width: 120px; height: 90px; object-fit: cover;
+    border-radius: 6px; flex-shrink: 0; background: #111;
+  }
+  .result-info { flex: 1; min-width: 0; }
+  .result-info .name {
+    font-weight: 600; margin-bottom: 4px; font-size: 0.95rem;
+  }
+  .result-info .desc {
+    color: var(--muted); font-size: 0.82rem; margin-bottom: 6px;
+    display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .result-info .meta-row {
+    display: flex; gap: 16px; font-size: 0.78rem; color: var(--muted);
+    margin-top: 6px; flex-wrap: wrap; align-items: center;
+  }
+  .similarity {
+    display: inline-block; padding: 2px 10px; border-radius: 20px;
+    font-size: 0.8rem; font-weight: 600;
+  }
+  .similarity.high { background: #1a3a2a; color: var(--accent); }
+  .similarity.mid { background: #3a351a; color: var(--warn); }
+  .similarity.low { background: #2a2a2a; color: #999; }
+
+  .empty { text-align: center; padding: 60px 0; color: var(--muted); }
+  .empty .icon { font-size: 3rem; margin-bottom: 12px; }
+  .error { padding:12px; background:#3a1a1a; border:1px solid #5a2a2a;
+           border-radius:8px; color: #f44; font-size:0.85rem; margin-top:16px; display:none; }
+  .error.show { display:block; }
+  .spinner { display:none; margin:40px auto; width:24px; height:24px;
+             border:2px solid var(--border); border-top-color:var(--accent);
+             border-radius:50%; animation:spin .6s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg);} }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>🔍 语义搜索</h1>
+  <p class="subtitle">用自然语言描述你要找的图片</p>
+
+  <div class="nav">
+    <a href="/upload-web/">📤 上传</a>
+    <a href="/query-web/" class="active">🔍 搜索</a>
+  </div>
+
+  <div class="search-box">
+    <input type="text" id="queryInput"
+           placeholder="例如：京东七鲜七月的饮料海报"
+           autofocus>
+    <button id="searchBtn" disabled>搜索</button>
+  </div>
+  <div class="hint">
+    💡 直接说需求即可：<em>「小明上传的」「7月的海报」「去年的PPT」</em> — AI 会帮你拆成搜索词和过滤器
+  </div>
+
+  <div class="parsed-tags" id="parsedTags"></div>
+
+  <div class="meta" id="meta"></div>
+  <div class="spinner" id="spinner"></div>
+  <div class="error" id="error"></div>
+
+  <div id="results"></div>
+  <div class="empty" id="empty">
+    <div class="icon">🔎</div>
+    <p>输入描述开始搜索</p>
+  </div>
+</div>
+
+<script>
+const API = '';
+
+const queryInput = document.getElementById('queryInput');
+const searchBtn = document.getElementById('searchBtn');
+const spinner = document.getElementById('spinner');
+const errorDiv = document.getElementById('error');
+const metaDiv = document.getElementById('meta');
+const resultsDiv = document.getElementById('results');
+const emptyDiv = document.getElementById('empty');
+const parsedTags = document.getElementById('parsedTags');
+
+queryInput.addEventListener('input', () => {
+  searchBtn.disabled = !queryInput.value.trim();
+});
+
+queryInput.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && queryInput.value.trim()) doSearch();
+});
+
+searchBtn.addEventListener('click', doSearch);
+
+// 初始加载：显示已有图片数（含去重统计）
+(async () => {
+  try {
+    const resp = await fetch(`${API}/api/images`);
+    const images = await resp.json();
+    if (Array.isArray(images) && images.length) {
+      const total = images.length;
+      const dupes = images.filter(i => i.duplicate_of).length;
+      const unique = total - dupes;
+      let txt = `📚 ${unique} 张独立图片`;
+      if (dupes > 0) txt += `（${dupes} 张重复已隐藏）`;
+      metaDiv.textContent = txt;
+    }
+  } catch(e) {}
+})();
+
+async function doSearch() {
+  const query = queryInput.value.trim();
+  if (!query) return;
+
+  searchBtn.disabled = true;
+  spinner.style.display = 'block';
+  errorDiv.classList.remove('show');
+  resultsDiv.innerHTML = '';
+  emptyDiv.style.display = 'none';
+  parsedTags.innerHTML = '';
+
+  try {
+    const resp = await fetch(`${API}/api/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, top_n: 10 }),
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      showError(data.error || '搜索失败');
+      return;
+    }
+
+    // 显示 AI 解析的过滤条件
+    if (data.parsed) {
+      const tags = [];
+      if (data.parsed.uploader) {
+        tags.push(`<span class="parsed-tag"><span class="label">上传人</span>${data.parsed.uploader}</span>`);
+      }
+      if (data.parsed.date_from || data.parsed.date_to) {
+        const from = data.parsed.date_from || '…';
+        const to = data.parsed.date_to || '…';
+        tags.push(`<span class="parsed-tag"><span class="label">日期</span>${from} ~ ${to}</span>`);
+      }
+      if (data.parsed.query !== query) {
+        tags.push(`<span class="parsed-tag"><span class="label">搜索词</span>${data.parsed.query}</span>`);
+      }
+      parsedTags.innerHTML = tags.join('');
+    }
+
+    const results = data.results;
+    if (!results || !results.length) {
+      emptyDiv.innerHTML = '<div class="icon">😕</div><p>没有找到匹配的图片</p>';
+      emptyDiv.style.display = 'block';
+      metaDiv.textContent = '';
+      return;
+    }
+
+    metaDiv.textContent = `找到 ${results.length} 条结果`;
+    resultsDiv.innerHTML = results.map((r, i) => {
+      let sourceHtml = '';
+      if (r.source_file && r.source_url) {
+        sourceHtml = `<div style="margin-top:6px;font-size:0.78rem;">
+          📎 来源: <a href="${r.source_url}" target="_blank"
+            style="color:var(--accent);text-decoration:none;">${r.source_file}</a>
+        </div>`;
+      }
+      return `
+      <div class="result-card">
+        <img src="${r.thumbnail_path || r.file_path}" alt="${r.file_name}"
+             onerror="this.style.display='none'">
+        <div class="result-info">
+          <div class="name">${r.file_name}</div>
+          <div class="desc">${r.description || '无描述'}</div>
+          <div class="meta-row">
+            <span>${r.uploader || '-'}</span>
+            <span>${(r.upload_time || '').slice(0, 10)}</span>
+            <a href="${r.file_path}" download="${r.file_name}"
+               style="color:var(--accent);text-decoration:none;font-size:0.8rem;"
+               title="下载原图">⬇ 下载</a>
+          </div>
+          ${sourceHtml}
+        </div>
+      </div>
+      `;
+    }).join('');
+
+  } catch (e) {
+    showError(`网络错误: ${e.message}`);
+  } finally {
+    searchBtn.disabled = false;
+    spinner.style.display = 'none';
+  }
+}
+
+function showError(msg) {
+  errorDiv.textContent = '❌ ' + msg;
+  errorDiv.classList.add('show');
+}
+</script>
+</body>
+</html>

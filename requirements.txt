@@ -1,0 +1,9 @@
+zhipuai
+pillow
+python-dotenv
+python-docx
+supabase
+flask
+flask-cors
+PyMuPDF
+httpx

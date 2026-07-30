@@ -1,0 +1,27 @@
+# 密钥
+.env
+
+# 虚拟环境
+library/
+__pycache__/
+*.pyc
+
+# 临时文件
+temp_uploads/
+thumbnails/
+uploads/
+*.db
+data.json
+
+# 测试文件
+doc-test/
+files/
+
+# IDE
+.joycode/
+.vscode/
+.idea/
+
+# 系统
+.DS_Store
+Thumbs.db
