@@ -1,1 +1,1 @@
-web: PYTHONIOENCODING=utf-8 PYTHONUTF8=1 LANG=C.UTF-8 LC_ALL=C.UTF-8 python server.py
+web: python server.py

@@ -491,9 +491,8 @@ def index():
 # ============================================================
 
 if __name__ == "__main__":
-    print("\n" + "=" * 55)
-    print("  Library Agent API Server")
-    print("  上传: http://localhost:5050/upload-web/")
-    print("  搜索: http://localhost:5050/query-web/")
-    print("=" * 55 + "\n")
-    app.run(host="0.0.0.0", port=5050, debug=False)
+    import os
+    port = int(os.environ.get("PORT", 5050))
+    from waitress import serve
+    print(f"Starting on port {port}")
+    serve(app, host="0.0.0.0", port=port)
