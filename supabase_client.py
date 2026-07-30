@@ -57,8 +57,8 @@ def get_supabase() -> Client:
 def add_image(image_info: dict) -> dict:
     """Insert image record via raw REST."""
     import httpx, json
-    base = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
+    base = (os.getenv("SUPABASE_URL") or "").strip()
+    key = (os.getenv("SUPABASE_KEY") or "").strip()
 
     row = {
         "file_name": image_info["file_name"],
@@ -203,8 +203,8 @@ def upload_to_storage(bucket: str, local_path: Path, remote_name: Optional[str] 
         str: _ URL_
     """
     import httpx
-    base = os.getenv("SUPABASE_URL")
-    key = os.getenv("SUPABASE_KEY")
+    base = (os.getenv("SUPABASE_URL") or "").strip()
+    key = (os.getenv("SUPABASE_KEY") or "").strip()
 
     if remote_name is None:
         remote_name = _safe_storage_name(local_path.name)
