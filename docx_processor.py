@@ -150,7 +150,7 @@ def generate_docx_summary(docx_path: str | Path, max_chars: int = 300) -> str:
         return full_text[:max_chars]
 
 
-def process_docx(docx_path: str, uploader: str = "test_user") -> dict:
+def process_docx(docx_path: str, uploader: str = "test_user", source_name: str = "") -> dict:
     """_ Word _ + _ + _
 
     _
@@ -203,7 +203,7 @@ def process_docx(docx_path: str, uploader: str = "test_user") -> dict:
     print(f"   Summary: {summary}")
 
     # 4. [CN]Doc summary + [CN]
-    source_label = f"{docx_name}.docx"
+    source_label = source_name if source_name else f"{docx_name}.docx"
     print(f"\n[Step 4] Indexing {len(image_paths)} images with summary...")
     image_results = []
     for img_path in image_paths:

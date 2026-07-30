@@ -218,7 +218,7 @@ def _handle_process():
     if suffix == ".pdf":
         try:
             from pdf_processor import process_pdf
-            result = process_pdf(temp_path.as_posix(), uploader=uploader)
+            result = process_pdf(temp_path.as_posix(), uploader=uploader, source_name=fn)
             return jsonify({
                 "type": "pdf",
                 "name": result.get("pdf_name", ""),
@@ -236,7 +236,7 @@ def _handle_process():
     if suffix == ".docx":
         try:
             from docx_processor import process_docx
-            result = process_docx(temp_path.as_posix(), uploader=uploader)
+            result = process_docx(temp_path.as_posix(), uploader=uploader, source_name=fn)
             return jsonify({
                 "type": "docx",
                 "name": result.get("docx_name", ""),
