@@ -232,51 +232,20 @@ def _handle_process():
             traceback.print_exc()
             return _err(e)
 
-    # ── DOCX [CN] Windows GBK [CN]──
+    # ── DOCX [CN] ──
     if suffix == ".docx":
-        import subprocess, json as _json2
-        # [CN] JSON [CN]
-        args_file = TEMP_DIR / f"_args_{temp_path.stem}.json"
-        args_file.write_text(_json2.dumps({
-            "path": temp_path.as_posix(),
-            "uploader": uploader
-        }), encoding="utf-8")
-
-        # [CN] Python [CN]
-        worker_script = TEMP_DIR / "_docx_worker.py"
-        worker_script.write_text(r'''
-import sys, json
-from pathlib import Path
-BASE = Path(r"''' + str(BASE_DIR) + r'''")
-sys.path.insert(0, str(BASE))
-args = json.loads(Path(sys.argv[1]).read_text("utf-8"))
-from docx_processor import process_docx
-r = process_docx(args["path"], uploader=args["uploader"])
-result = {"name":r["docx_name"],"summary":r["summary"],"image_count":r["image_count"],"indexed_count":len(r["image_results"])}
-print("__OK__" + json.dumps(result, ensure_ascii=False))
-''', encoding="utf-8")
-
         try:
-            proc = subprocess.run(
-                [sys.executable, str(worker_script), str(args_file)],
-                capture_output=True, text=True, timeout=300,
-                encoding="utf-8", errors="replace",
-                env={**dict(_os.environ), "PYTHONIOENCODING": "utf-8", "PYTHONUTF8": "1"}
-            )
-            out = proc.stdout
-            if "__OK__" in out and proc.returncode == 0:
-                data = _json2.loads(out.split("__OK__", 1)[1])
-                return jsonify({"type": "docx", **data})
-            else:
-                return jsonify({"error": f"Worker failed: {(out + proc.stderr)[:300]}"}), 500
+            from docx_processor import process_docx
+            result = process_docx(temp_path.as_posix(), uploader=uploader)
+            return jsonify({
+                "type": "docx",
+                "name": result.get("docx_name", ""),
+                "summary": str(result.get("summary", "")),
+                "image_count": result.get("image_count", 0),
+                "indexed_count": len(result.get("image_results", [])),
+            })
         except Exception as e:
             return _err(e)
-        finally:
-            # [CN]
-            try: args_file.unlink()
-            except: pass
-            try: worker_script.unlink()
-            except: pass
 
     # ── [CN] ──
     img_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
