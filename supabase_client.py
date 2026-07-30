@@ -138,15 +138,15 @@ def search_similar(
         if "date_to" in filters:
             rpc_params["filter_date_to"] = filters["date_to"]
 
-    import json as _j
     r = httpx.post(
         f"{base}/rest/v1/rpc/match_images",
         headers={"apikey": key, "Authorization": f"Bearer {key}",
                  "Content-Type": "application/json",
-                 "Accept": "application/json"},
-        content=_j.dumps(rpc_params, ensure_ascii=True),
+                 "Content-Profile": "public"},
+        json=rpc_params,
     )
-    r.raise_for_status()
+    if r.status_code != 200:
+        raise Exception(f"RPC failed ({r.status_code}): {r.text[:300]}")
     return [dict(item) for item in r.json()]
 
 
