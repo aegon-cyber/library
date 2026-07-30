@@ -52,16 +52,10 @@ def get_supabase() -> Client:
 # ============================================================
 
 def add_image(image_info: dict) -> dict:
-    """_ Supabase _
-
-    Args:
-        image_info: _ file_name, file_path, thumbnail_path, uploader,
-                    upload_time, description, extra_description, embedding
-
-    Returns:
-        dict: _ id_
-    """
-    supabase = get_supabase()
+    """Insert image record via raw REST."""
+    import httpx, json
+    base = os.getenv("SUPABASE_URL")
+    key = os.getenv("SUPABASE_KEY")
 
     row = {
         "file_name": image_info["file_name"],
@@ -76,8 +70,18 @@ def add_image(image_info: dict) -> dict:
         "embedding": image_info["embedding"],
     }
 
-    result = supabase.table("images").insert(row).execute()
-    return dict(result.data[0]) if result.data else {}
+    r = httpx.post(
+        f"{base}/rest/v1/images",
+        headers={
+            "apikey": key, "Authorization": f"Bearer {key}",
+            "Content-Type": "application/json",
+            "Prefer": "return=representation",
+        },
+        content=json.dumps(row, ensure_ascii=True),
+    )
+    r.raise_for_status()
+    data = r.json()
+    return dict(data[0]) if data else {}
 
 
 def get_all_images() -> list[dict]:
