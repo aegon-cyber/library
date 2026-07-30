@@ -212,55 +212,7 @@ def _handle_process():
     tmp.close()
     temp_path = Path(tmp.name)
 
-    if 'multipart/form-data' in content_type:
-        # [CN] multipart[CN] Werkzeug
-        import email.parser as _ep, io as _io
-        from email.policy import default as _default_policy
-        boundary = content_type.split('boundary=', 1)[-1].strip()
-        if boundary.startswith('"') and boundary.endswith('"'):
-            boundary = boundary[1:-1]
-        boundary_bytes = boundary.encode('utf-8')
-
-        # [CN] boundary [CN]
-        parts = raw_data.split(b'--' + boundary_bytes)
-        for part in parts:
-            if b'name="file"' in part[:200] or b'name=file' in part[:200]:
-                # [CN] filename
-                header_end = part.find(b'\r\n\r\n')
-                if header_end == -1:
-                    continue
-                headers = part[:header_end].decode('utf-8', errors='replace')
-                for line in headers.split('\r\n'):
-                    if 'filename=' in line:
-                        fn = line.split('filename=', 1)[-1].strip().strip('"')
-                # [CN]
-                file_data = part[header_end + 4:]
-                if file_data.endswith(b'\r\n'):
-                    file_data = file_data[:-2]
-                break
-            if b'name="uploader"' in part[:250]:
-                header_end = part.find(b'\r\n\r\n')
-                if header_end != -1:
-                    uploader = part[header_end+4:].decode('utf-8', errors='replace').strip()
-                    if uploader.endswith('\r\n'):
-                        uploader = uploader[:-2]
-
-    if not file_data or file_data == raw_data:
-        return jsonify({"error": "Cannot extract file content"}), 400
-
-    if fn == '':
-        return jsonify({"error": "Empty filename"}), 400
-
-    extra_description = None  # multipart _
-
-    suffix = ''.join(Path(fn).suffixes) if '.' in fn else ''
-    if not suffix:
-        suffix = '.bin'
-    import tempfile
-    tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
-    tmp.write(file_data)
-    tmp.close()
-    temp_path = Path(tmp.name)
+    extra_description = None
 
     # ── PDF [CN] ──
     if suffix == ".pdf":
