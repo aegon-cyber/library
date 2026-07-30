@@ -391,8 +391,6 @@ def api_search():
     elif parsed.get("date_to"):
         filters["date_to"] = parsed["date_to"]
 
-    print(f"  [search] \"{raw_query}\" -> query=\"{search_query}\" filters={filters}")
-
     try:
         results = search_similar(search_query, top_n=top_n, filters=(filters if filters else None))
 
