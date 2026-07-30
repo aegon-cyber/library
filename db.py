@@ -1,11 +1,11 @@
 """
-library-agent - SQLite 数据库模块
+library-agent - SQLite _
 
-提供结构化字段存储，替代纯 JSON 遍历过滤。
-存储：uploader, upload_time, description, extra_description 等文本字段。
-不存储：embedding 向量（仍放在 data.json 中）。
+_ JSON _
+_uploader, upload_time, description, extra_description _
+_embedding _ data.json _
 
-使用方式：
+_
     from db import get_db
     db = get_db()
     db.add_image(...)
@@ -21,14 +21,14 @@ DB_PATH = BASE_DIR / "images.db"
 
 
 def get_db() -> "ImageDB":
-    """获取数据库单例，自动建表。"""
+    """_"""
     return ImageDB(str(DB_PATH))
 
 
 class ImageDB:
-    """图片结构化数据库（SQLite）。
+    """_SQLite_
 
-    表结构：
+    _
         images (
             id          INTEGER PRIMARY KEY,
             file_name   TEXT NOT NULL,
@@ -40,7 +40,7 @@ class ImageDB:
             extra_description TEXT
         )
 
-    索引：
+    _
         - idx_uploader ON images(uploader)
         - idx_upload_time ON images(upload_time)
     """
@@ -52,7 +52,7 @@ class ImageDB:
         self._init_tables()
 
     def _init_tables(self):
-        """建表（如果不存在）。"""
+        """_"""
         self.conn.executescript("""
             CREATE TABLE IF NOT EXISTS images (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -74,14 +74,14 @@ class ImageDB:
         self.conn.commit()
 
     def add_image(self, image_info: dict) -> int:
-        """插入一条图片记录。
+        """_
 
         Args:
-            image_info: 包含 file_name, file_path, thumbnail_path,
-                       uploader, upload_time, description, extra_description 的字典。
+            image_info: _ file_name, file_path, thumbnail_path,
+                       uploader, upload_time, description, extra_description _
 
         Returns:
-            int: 插入后的行 ID。
+            int: _ ID_
         """
         cursor = self.conn.execute(
             """INSERT INTO images
@@ -102,12 +102,12 @@ class ImageDB:
         return cursor.lastrowid
 
     def get_all_images(self) -> list[dict]:
-        """获取所有图片记录（不含 embedding）。"""
+        """_ embedding_"""
         cursor = self.conn.execute("SELECT * FROM images ORDER BY id")
         return [dict(row) for row in cursor.fetchall()]
 
     def get_image_by_id(self, image_id: int) -> dict | None:
-        """根据 ID 获取单条记录。"""
+        """_ ID _"""
         cursor = self.conn.execute(
             "SELECT * FROM images WHERE id = ?", (image_id,)
         )
@@ -115,20 +115,20 @@ class ImageDB:
         return dict(row) if row else None
 
     def search_by_ids(self, ids: list[int], filters: dict = None) -> list[dict]:
-        """根据 ID 列表和可选过滤条件查询图片。
+        """_ ID _
 
-        用于向量召回后的精排阶段：先用向量相似度筛出候选 ID，
-        再通过 SQL 做结构化过滤。
+        _ ID_
+        _ SQL _
 
         Args:
-            ids: 候选图片 ID 列表（向量召回结果）。
-            filters: 可选过滤条件，支持：
-                - uploader: 上传人精确匹配
-                - date_from: 起始日期 (YYYY-MM-DD)
-                - date_to: 截止日期 (YYYY-MM-DD)
+            ids: _ ID _
+            filters: _
+                - uploader: _
+                - date_from: _ (YYYY-MM-DD)
+                - date_to: _ (YYYY-MM-DD)
 
         Returns:
-            list[dict]: 匹配的图片记录列表。
+            list[dict]: _
         """
         if not ids:
             return []
@@ -153,10 +153,10 @@ class ImageDB:
         return [dict(row) for row in cursor.fetchall()]
 
     def count(self) -> int:
-        """返回图片总数。"""
+        """_"""
         cursor = self.conn.execute("SELECT COUNT(*) FROM images")
         return cursor.fetchone()[0]
 
     def close(self):
-        """关闭数据库连接。"""
+        """_"""
         self.conn.close()

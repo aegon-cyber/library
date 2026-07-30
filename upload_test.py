@@ -1,25 +1,25 @@
 """
-library-agent - 图片向量化检索系统 (Supabase 云端版)
+library-agent - _ (Supabase _)
 
-功能：
-  1. 上传图片并生成缩略图 → 存入 Supabase Storage
-  2. 基于文件名和标签生成向量（智谱AI Embedding） → 存入 Supabase PostgreSQL + pgvector
-  3. 语义搜索：pgvector 余弦相似度匹配
-  4. 查看所有已上传图片
+_
+  1. _ → _ Supabase Storage
+  2. _AI Embedding_ → _ Supabase PostgreSQL + pgvector
+  3. _pgvector _
+  4. _
 
-依赖：
-  - zhipuai SDK (智谱AI Embedding API)
-  - Pillow (图片处理)
-  - python-dotenv (环境变量管理)
-  - supabase (数据库 + 存储)
+_
+  - zhipuai SDK (_AI Embedding API)
+  - Pillow (_)
+  - python-dotenv (_)
+  - supabase (_ + _)
 
 使用前请：
-  1. 创建虚拟环境: python -m venv library
-  2. 激活虚拟环境: library\\Scripts\\activate.bat (Windows)
-  3. 安装依赖: pip install -r requirements.txt && pip install supabase
-  4. 创建 .env 文件，填写 ZHIPU_API_KEY + SUPABASE_URL + SUPABASE_KEY
-  5. 在 Supabase Dashboard SQL Editor 中执行 setup_supabase.sql
-  6. 运行: python upload_test.py
+  1. _: python -m venv library
+  2. _: library\\Scripts\\activate.bat (Windows)
+  3. _: pip install -r requirements.txt && pip install supabase
+  4. _ .env _ ZHIPU_API_KEY + SUPABASE_URL + SUPABASE_KEY
+  5. _ Supabase Dashboard SQL Editor _ setup_supabase.sql
+  6. _: python upload_test.py
 """
 
 import os
@@ -29,16 +29,16 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-# 强制 UTF-8，解决 Windows GBK 编码问题
+# [CN] UTF-8[CN] Windows GBK [CN]
 if sys.stdout.encoding != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 def _safe_print(*args, **kwargs):
-    """print 的安全包装：自动处理 GBK 无法编码的字符。"""
+    """print _ GBK _"""
     try:
         print(*args, **kwargs)
     except UnicodeEncodeError:
-        # 将无法编码的字符替换为 ?
+        # [CN] ?
         safe_args = [str(a).encode(sys.stdout.encoding or 'utf-8', errors='replace').decode(sys.stdout.encoding or 'utf-8') for a in args]
         print(*safe_args, **kwargs)
 
@@ -55,67 +55,67 @@ from supabase_client import (
 )
 
 # ============================================================
-# 环境配置
+# [CN]
 # ============================================================
 
-# 加载 .env 文件中的环境变量
+# [CN] .env [CN]
 load_dotenv()
 
-# 读取配置
+# [CN]
 API_KEY = os.getenv("ZHIPU_API_KEY")
 EMBEDDING_MODEL = os.getenv("ZHIPU_EMBEDDING_MODEL", "embedding-3")
 VISION_MODEL = os.getenv("ZHIPU_VISION_MODEL", "GLM-5V-Turbo")
 
-# 初始化智谱AI客户端
+# [CN]AI[CN]
 if not API_KEY:
     print("ERROR: ZHIPU_API_KEY not found, please configure in .env file")
     exit(1)
 
 client = ZhipuAI(api_key=API_KEY)
 
-# 项目目录常量
+# [CN]
 BASE_DIR = Path(__file__).parent
-UPLOADS_DIR = BASE_DIR / "uploads"       # 本地临时处理目录（上传到 Supabase Storage 后可清理）
-THUMBNAILS_DIR = BASE_DIR / "thumbnails" # 本地临时缩略图目录（上传到 Supabase Storage 后可清理）
+UPLOADS_DIR = BASE_DIR / "uploads"       # _ Supabase Storage _
+THUMBNAILS_DIR = BASE_DIR / "thumbnails" # _ Supabase Storage _
 
-# 确保本地临时目录存在
+# [CN]
 UPLOADS_DIR.mkdir(exist_ok=True)
 THUMBNAILS_DIR.mkdir(exist_ok=True)
 
 
 # ============================================================
-# 图片处理
+# [CN]
 # ============================================================
 
 def generate_thumbnail(image_path: str | Path) -> Path:
-    """生成图片的缩略图（宽200px，保持比例）。
+    """_200px_
 
     Args:
-        image_path: 原始图片路径。
+        image_path: _
 
     Returns:
-        Path: 缩略图保存路径 (thumbnails/thumb_原文件名)。
+        Path: _ (thumbnails/thumb__)_
 
     Raises:
-        FileNotFoundError: 图片文件不存在。
+        FileNotFoundError: Image file not found。
     """
     image_path = Path(image_path)
 
     if not image_path.exists():
-        raise FileNotFoundError(f"图片文件不存在: {image_path}")
+        raise FileNotFoundError(f"Image file not found: {image_path}")
 
     img = Image.open(image_path)
     if img.mode in ('RGBA', 'P', 'LA'):
         img = img.convert('RGB')
     original_width, original_height = img.size
 
-    # 计算缩略图尺寸：宽200px，保持比例
+    # [CN]200px[CN]
     thumb_width = 200
     thumb_height = int(original_height * (thumb_width / original_width))
 
     img.thumbnail((thumb_width, thumb_height), Image.LANCZOS)
 
-    # 保存缩略图
+    # [CN]
     thumb_filename = f"thumb_{image_path.name}"
     thumb_path = THUMBNAILS_DIR / thumb_filename
     img.save(thumb_path)
@@ -124,29 +124,29 @@ def generate_thumbnail(image_path: str | Path) -> Path:
 
 
 def describe_image(image_path: str | Path) -> str:
-    """调用 GLM-5V-Turbo 视觉模型识别图片内容，生成文字描述。
+    """_ GLM-5V-Turbo _
 
-    将图片 base64 编码后传给视觉模型，让模型用中文描述图片中的
-    主体对象、场景、文字内容、颜色、风格等关键信息。
+    _ base64 _
+    _
 
     Args:
-        image_path: 图片文件路径。
+        image_path: _
 
     Returns:
-        str: 图片的文字描述。
+        str: _
 
     Raises:
-        Exception: API调用失败。
+        Exception: API_
     """
     import base64
 
     image_path = Path(image_path)
 
-    # 读取图片并 base64 编码
+    # [CN] base64 [CN]
     with open(image_path, "rb") as f:
         image_data = base64.b64encode(f.read()).decode("utf-8")
 
-    # 根据文件扩展名确定 MIME 类型
+    # [CN] MIME [CN]
     suffix = image_path.suffix.lower()
     mime_map = {
         ".png": "image/png",
@@ -182,20 +182,20 @@ def describe_image(image_path: str | Path) -> str:
         description = response.choices[0].message.content
         return description
     except Exception as e:
-        raise Exception(f"GLM-5V-Turbo 图片识别失败: {e}")
+        raise Exception(f"GLM-5V-Turbo vision recognition failed: {e}")
 
 
 def get_embedding(text: str) -> list[float]:
-    """调用智谱AI Embedding-3 API对文本生成向量。
+    """_AI Embedding-3 API_
 
     Args:
-        text: 文本字符串。
+        text: _
 
     Returns:
-        list[float]: 向量列表。
+        list[float]: _
 
     Raises:
-        Exception: API调用失败。
+        Exception: API_
     """
     try:
         response = client.embeddings.create(
@@ -204,47 +204,47 @@ def get_embedding(text: str) -> list[float]:
         )
         return response.data[0].embedding
     except Exception as e:
-        raise Exception(f"Embedding-3 向量化失败: {e}")
+        raise Exception(f"Embedding-3 embedding failed: {e}")
 
 
 def process_image(image_path: str, uploader: str = "test_user", extra_description: str = None,
                   source_file: str = "", source_url: str = "") -> dict:
-    """处理图片上传：生成缩略图、多模态向量化、存入 Supabase。
+    """_ Supabase_
 
     Args:
-        image_path: 图片文件路径。
-        uploader: 上传人名称，默认 test_user。
-        extra_description: 额外描述文本（人工标注/文档摘要），拼接到视觉描述后一起向量化。
-        source_file: 图片来源文档名（如 "report.pdf"），直接上传的图片为空。
-        source_url: 图片来源文档的 Supabase Storage 链接。
+        image_path: _
+        uploader: _ test_user_
+        extra_description: _/Doc summary_
+        source_file: _ "report.pdf"_
+        source_url: _ Supabase Storage _
 
     Returns:
-        dict: 图片信息字典，包含 id, file_name, embedding 等字段。
+        dict: _ id, file_name, embedding _
 
     Raises:
-        FileNotFoundError: 图片文件不存在。
-        Exception: 缩略图生成或API调用失败。
+        FileNotFoundError: Image file not found。
+        Exception: _API_
     """
     image_path = Path(image_path)
 
-    # 1. 检查文件是否存在
+    # 1. [CN]
     if not image_path.exists():
-        raise FileNotFoundError(f"图片文件不存在: {image_path}")
+        raise FileNotFoundError(f"Image file not found: {image_path}")
 
     print(f"Processing: {image_path.name}")
 
-    # 2. 复制原图到本地临时 uploads/ 目录
+    # 2. [CN] uploads/ [CN]
     local_dest = UPLOADS_DIR / image_path.name
     img = Image.open(image_path)
     if img.mode in ('RGBA', 'P', 'LA'):
         img = img.convert('RGB')
     img.save(local_dest)
 
-    # 3. 生成缩略图（本地 Pillow 处理）
+    # 3. [CN] Pillow [CN]
     thumb_path = generate_thumbnail(image_path)
     print(f"   Thumbnail: {thumb_path}")
 
-    # 4. 上传原图和缩略图到 Supabase Storage
+    # 4. [CN] Supabase Storage
     print(f"   Uploading to Supabase Storage...")
     try:
         file_url = upload_to_storage("uploads", local_dest)
@@ -252,23 +252,23 @@ def process_image(image_path: str, uploader: str = "test_user", extra_descriptio
         print(f"   File URL: {file_url}")
         print(f"   Thumb URL: {thumb_url}")
     except Exception as e:
-        raise Exception(f"Supabase Storage 上传失败: {e}")
+        raise Exception(f"Supabase Storage upload failed: {e}")
 
-    # 5. 先用 GLM-5V-Turbo 识别图片内容，生成文字描述
+    # 5. [CN] GLM-5V-Turbo [CN]
     description = describe_image(image_path)
     print(f"   Description: {description}")
 
-    # 5.5 如果有额外描述（人工标注/文档摘要），拼接到视觉描述后
+    # 5.5 [CN]/Doc summary[CN]
     full_description = description
     if extra_description:
         full_description = f"{description}\n{extra_description}"
         print(f"   Extra description: {extra_description}")
 
-    # 6. 再用 Embedding-3 对描述文本生成向量
+    # 6. [CN] Embedding-3 [CN]
     embedding = get_embedding(full_description)
     print(f"   Embedding generated, dims: {len(embedding)}")
 
-    # 7. 存入 Supabase PostgreSQL（含向量）
+    # 7. [CN] Supabase PostgreSQL[CN]
     upload_time = datetime.now().isoformat()
 
     image_info = {
@@ -295,18 +295,18 @@ def process_image(image_path: str, uploader: str = "test_user", extra_descriptio
 
 
 # ============================================================
-# 语义搜索
+# [CN]
 # ============================================================
 
 def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
-    """计算两个向量的余弦相似度。
+    """_
 
     Args:
-        vec_a: 向量A。
-        vec_b: 向量B。
+        vec_a: _A_
+        vec_b: _B_
 
     Returns:
-        float: 余弦相似度，范围 [-1, 1]。
+        float: _ [-1, 1]_
     """
     dot_product = sum(a * b for a, b in zip(vec_a, vec_b))
     norm_a = math.sqrt(sum(a * a for a in vec_a))
@@ -319,30 +319,30 @@ def cosine_similarity(vec_a: list[float], vec_b: list[float]) -> float:
 
 
 def search_similar(query: str, top_n: int = 3, filters: dict = None) -> list[dict]:
-    """语义搜索：pgvector 余弦相似度 + 可选结构化过滤。
+    """_pgvector _ + _
 
     Args:
-        query: 搜索查询文本。
-        top_n: 返回结果数量，默认3。
-        filters: 可选的结构化过滤条件，支持:
-            - uploader: 上传人精确匹配
-            - date_from: 起始日期 (YYYY-MM-DD)
-            - date_to: 截止日期 (YYYY-MM-DD)
-            示例: {"uploader": "万里", "date_from": "2026-07-01"}
+        query: _
+        top_n: _3_
+        filters: _:
+            - uploader: _
+            - date_from: _ (YYYY-MM-DD)
+            - date_to: _ (YYYY-MM-DD)
+            _: {"uploader": "_", "date_from": "2026-07-01"}
 
     Returns:
-        list[dict]: 按相似度降序排列的结果列表，每项包含
+        list[dict]: _
                     file_name, similarity, file_path, id, description。
     """
     print(f"Searching: \"{query}\"")
     if filters:
         print(f"   Filters: {filters}")
 
-    # 1. 将查询文本向量化
+    # 1. [CN]
     query_embedding = get_embedding(query)
     print(f"   Query embedding generated")
 
-    # 2. 调用 Supabase pgvector RPC 搜索（向量相似度 + 结构化过滤一站式）
+    # 2. [CN] Supabase pgvector RPC [CN] + [CN]
     total = db_count_images()
     if total == 0:
         print("   No images in DB, please upload first")
@@ -355,7 +355,7 @@ def search_similar(query: str, top_n: int = 3, filters: dict = None) -> list[dic
         print("   No images match filters")
         return []
 
-    # 3. 打印结果
+    # 3. [CN]
     print(f"\nResults (top {len(results)}):")
     print("-" * 60)
     for i, r in enumerate(results, 1):
@@ -372,39 +372,39 @@ def search_similar(query: str, top_n: int = 3, filters: dict = None) -> list[dic
 
 
 def generate_answer(query: str, results: list[dict], top_n: int = 3) -> str:
-    """基于检索结果，调用 LLM 生成自然语言回答。
+    """_ LLM _
 
-    将检索到的图片描述、文档摘要、上传人、时间等信息拼成上下文，
-    让 GLM-5V-Turbo 以自然语言组织回答，直接回应用户的提问。
+    _Doc summary_
+    _ GLM-5V-Turbo _
 
     Args:
-        query: 用户原始提问。
-        results: search_similar() 返回的匹配结果列表。
-        top_n: 最多使用几条结果生成回答，默认3。
+        query: _
+        results: search_similar() _
+        top_n: _3_
 
     Returns:
-        str: 自然语言回答文本。
+        str: _
     """
     if not results:
-        return "知识库中未找到相关内容。"
+        return "No relevant content found."
 
-    # 取前 top_n 条，构建上下文
+    # [CN] top_n [CN]
     context_parts = []
     for i, r in enumerate(results[:top_n], 1):
-        part = f"[资料{i}] 来源：{r['uploader']}，时间：{r['upload_time'][:10]}\n"
-        part += f"图片描述：{r['description']}\n"
-        # 补充 extra_description（从 SQLite 获取）
+        part = f"[_{i}] _{r['uploader']}_{r['upload_time'][:10]}\n"
+        part += f"_{r['description']}\n"
+        # [CN] extra_description[CN] SQLite [CN]
         extra = r.get("extra_description", "")
         if extra:
-            part += f"文档摘要：{extra}\n"
-        part += f"相似度：{r['similarity']:.2f}"
+            part += f"Doc summary：{extra}\n"
+        part += f"_{r['similarity']:.2f}"
         context_parts.append(part)
 
     context = "\n\n".join(context_parts)
 
     try:
         response = client.chat.completions.create(
-            model=VISION_MODEL,  # GLM-5V-Turbo 也支持纯文本
+            model=VISION_MODEL,  # GLM-5V-Turbo _
             messages=[
                 {
                     "role": "system",
@@ -412,7 +412,7 @@ def generate_answer(query: str, results: list[dict], top_n: int = 3) -> str:
                         "你是一个知识库问答助手。请根据以下检索到的资料回答用户的问题。"
                         "如果资料中包含相关数据（数字、日期、金额、百分比等），请准确引用。"
                         "如果资料不足以回答问题，请如实说明。"
-                        "回答要简洁、直接，不超过200字。"
+                        "_200_"
                     )
                 },
                 {
@@ -424,24 +424,24 @@ def generate_answer(query: str, results: list[dict], top_n: int = 3) -> str:
         answer = response.choices[0].message.content
         return answer
     except Exception as e:
-        # 降级：直接拼接描述返回
+        # [CN]
         fallback = "\n".join([f"• {r['file_name']}: {r['description'][:100]}..." for r in results[:top_n]])
-        return f"（AI回答生成失败，以下为检索结果摘要）\n{fallback}"
+        return f"_AI_\n{fallback}"
 
 
 def ask(query: str, top_n: int = 3, filters: dict = None) -> str:
-    """RAG 完整流程：向量检索 + LLM 生成自然语言回答。
+    """RAG _ + LLM _
 
-    先调用 search_similar() 检索匹配图片/文档，
-    再调用 generate_answer() 将结果组织成自然语言回答。
+    _ search_similar() _/_
+    _ generate_answer() _
 
     Args:
-        query: 用户提问文本。
-        top_n: 检索返回数量，默认3。
-        filters: 可选结构化过滤条件。
+        query: _
+        top_n: _3_
+        filters: _
 
     Returns:
-        str: 自然语言回答。
+        str: _
     """
     print(f"\n{'='*60}")
     print(f"Q: {query}")
@@ -449,17 +449,17 @@ def ask(query: str, top_n: int = 3, filters: dict = None) -> str:
         print(f"Filters: {filters}")
     print(f"{'='*60}")
 
-    # 1. 向量检索
+    # 1. [CN]
     results = search_similar(query, top_n=top_n, filters=filters)
 
     if not results:
-        print("\nA: 知识库中未找到相关内容。")
-        return "知识库中未找到相关内容。"
+        print("\nA: No relevant content found.")
+        return "No relevant content found."
 
-    # 2. extra_description 已由 search_similar() 从 Supabase 返回，无需额外查询
-    # （match_images RPC 返回的 results 中已包含 extra_description 字段）
+    # 2. extra_description [CN] search_similar() [CN] Supabase [CN]
+    # [CN]match_images RPC [CN] results [CN] extra_description [CN]
 
-    # 3. LLM 生成回答
+    # 3. LLM [CN]
     print("\nGenerating answer...")
     answer = generate_answer(query, results, top_n=top_n)
 
@@ -470,11 +470,11 @@ def ask(query: str, top_n: int = 3, filters: dict = None) -> str:
 
 
 # ============================================================
-# 查看所有图片
+# [CN]
 # ============================================================
 
 def list_all_images() -> None:
-    """显示所有已上传图片的摘要信息。"""
+    """_"""
     images = db_get_all_images()
 
     if not images:
@@ -488,11 +488,11 @@ def list_all_images() -> None:
 
 
 # ============================================================
-# 主交互程序
+# [CN]
 # ============================================================
 
 def main():
-    """主交互菜单程序。"""
+    """_"""
     print("=" * 50)
     print("Library Agent - Image Vector Search")
     print("=" * 50)
@@ -508,7 +508,7 @@ def main():
         choice = input("\nEnter number: ").strip()
 
         if choice == "1":
-            # 上传图片
+            # [CN]
             image_path = input("Image path: ").strip()
             uploader = input("Uploader (default test_user): ").strip() or "test_user"
 
@@ -520,7 +520,7 @@ def main():
                 print(f"ERROR: {e}")
 
         elif choice == "2":
-            # 搜索图片
+            # [CN]
             query = input("Search query: ").strip()
             if not query:
                 print("Query cannot be empty")
@@ -535,7 +535,7 @@ def main():
                 print(f"ERROR: {e}")
 
         elif choice == "3":
-            # RAG 问答
+            # RAG [CN]
             query = input("Your question: ").strip()
             if not query:
                 print("Question cannot be empty")
@@ -544,7 +544,7 @@ def main():
             top_n_str = input("Top N (default 3): ").strip()
             top_n = int(top_n_str) if top_n_str else 3
 
-            # 可选结构化过滤
+            # [CN]
             use_filter = input("Filter by uploader? (press Enter to skip): ").strip()
             filters = None
             if use_filter:
@@ -562,11 +562,11 @@ def main():
                 print(f"ERROR: {e}")
 
         elif choice == "4":
-            # 查看所有图片
+            # [CN]
             list_all_images()
 
         elif choice == "5":
-            # 退出
+            # [CN]
             print("\nGoodbye!")
             break
 

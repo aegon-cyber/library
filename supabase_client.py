@@ -1,12 +1,12 @@
 """
-supabase_client - Supabase 数据库 + 存储客户端
+supabase_client - Supabase _ + _
 
-替代本地的 data.json + images.db + uploads/thumbnails/ 目录。
-所有操作通过 Supabase REST API 完成（不直连 PostgreSQL）。
+_ data.json + images.db + uploads/thumbnails/ _
+_ Supabase REST API _ PostgreSQL_
 
-表：images (含 pgvector embedding 列)
-存储桶：uploads / thumbnails
-搜索函数：match_images (RPC)
+_images (_ pgvector embedding _)
+_uploads / thumbnails
+_match_images (RPC)
 """
 
 import os
@@ -33,7 +33,7 @@ _supabase: Optional[Client] = None
 
 
 def get_supabase() -> Client:
-    """获取 Supabase 客户端单例。"""
+    """_ Supabase _"""
     global _supabase
     if _supabase is None:
         _supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
@@ -41,18 +41,18 @@ def get_supabase() -> Client:
 
 
 # ============================================================
-# 数据库操作
+# [CN]
 # ============================================================
 
 def add_image(image_info: dict) -> dict:
-    """向 Supabase 写入一条图片记录（含向量）。
+    """_ Supabase _
 
     Args:
-        image_info: 包含 file_name, file_path, thumbnail_path, uploader,
+        image_info: _ file_name, file_path, thumbnail_path, uploader,
                     upload_time, description, extra_description, embedding
 
     Returns:
-        dict: 写入后的完整记录（含服务端生成的 id）
+        dict: _ id_
     """
     supabase = get_supabase()
 
@@ -74,7 +74,7 @@ def add_image(image_info: dict) -> dict:
 
 
 def get_all_images() -> list[dict]:
-    """获取所有图片记录（不含 embedding，减少传输）。"""
+    """_ embedding_"""
     supabase = get_supabase()
     result = supabase.table("images").select(
         "id, file_name, file_path, thumbnail_path, uploader, upload_time, description, extra_description, source_file, source_url, duplicate_of"
@@ -83,7 +83,7 @@ def get_all_images() -> list[dict]:
 
 
 def get_image_by_id(image_id: int) -> Optional[dict]:
-    """根据 ID 获取单条图片记录。"""
+    """_ ID _"""
     supabase = get_supabase()
     result = supabase.table("images").select("*").eq("id", image_id).execute()
     return dict(result.data[0]) if result.data else None
@@ -95,18 +95,18 @@ def search_similar(
     match_threshold: float = 0.0,
     filters: Optional[dict] = None,
 ) -> list[dict]:
-    """向量相似度搜索 + 可选结构化过滤。
+    """_ + _
 
-    调用 Supabase match_images RPC 函数，在数据库内完成 pgvector 余弦距离计算。
+    _ Supabase match_images RPC _ pgvector _
 
     Args:
-        query_embedding: 查询向量（1024 维）。
-        top_n: 返回数量。
-        match_threshold: 最低相似度阈值（0-1）。
-        filters: 可选 {"uploader": "...", "date_from": "...", "date_to": "..."}
+        query_embedding: _1024 _
+        top_n: _
+        match_threshold: _0-1_
+        filters: _ {"uploader": "...", "date_from": "...", "date_to": "..."}
 
     Returns:
-        list[dict]: 按相似度降序的结果列表。
+        list[dict]: _
     """
     supabase = get_supabase()
 
@@ -129,35 +129,35 @@ def search_similar(
 
 
 def count_images() -> int:
-    """返回图片总数。"""
+    """_"""
     supabase = get_supabase()
     result = supabase.table("images").select("id", count="exact").execute()
     return result.count or 0
 
 
 def clear_all() -> int:
-    """清空所有图片记录（调试用）。返回删除条数。"""
+    """_"""
     supabase = get_supabase()
     result = supabase.table("images").delete().neq("id", -1).execute()
     return len(result.data or [])
 
 
 # ============================================================
-# 存储操作
+# [CN]
 # ============================================================
 
 def upload_to_storage(bucket: str, local_path: Path, remote_name: Optional[str] = None) -> str:
-    """上传文件到 Supabase Storage，返回公开 URL。
+    """_ Supabase Storage_ URL_
 
-    文件名中的非 ASCII 字符会被转换为安全形式，避免 Storage 的 InvalidKey 错误。
+    _ ASCII _ Storage _ InvalidKey _
 
     Args:
-        bucket: 存储桶名 ("uploads" | "thumbnails")。
-        local_path: 本地文件路径。
-        remote_name: 远程文件名，默认使用本地文件名（自动净化）。
+        bucket: _ ("uploads" | "thumbnails")_
+        local_path: _
+        remote_name: _
 
     Returns:
-        str: 文件公开访问 URL。
+        str: _ URL_
     """
     supabase = get_supabase()
 
@@ -170,7 +170,7 @@ def upload_to_storage(bucket: str, local_path: Path, remote_name: Optional[str] 
             file=f,
             file_options={
                 "content-type": _guess_mime(local_path),
-                "x-upsert": "true",  # 覆盖同名文件
+                "x-upsert": "true",  # _
             },
         )
 
@@ -179,36 +179,36 @@ def upload_to_storage(bucket: str, local_path: Path, remote_name: Optional[str] 
 
 
 def _safe_storage_name(filename: str) -> str:
-    """将文件名转换为 Supabase Storage 安全格式。
+    """_ Supabase Storage _
 
-    保留扩展名，主体部分只保留 ASCII 字母数字、连字符、下划线。
-    非 ASCII 字符用文件名的 hash 替代，确保唯一且安全。
+    _ ASCII _
+    _ ASCII _ hash _
     """
     import hashlib
 
     stem = Path(filename).stem
     suffix = Path(filename).suffix
 
-    # 如果文件名已经是纯 ASCII，直接返回
+    # [CN] ASCII[CN]
     if all(ord(c) < 128 for c in filename):
         return filename
 
-    # 否则用 hash 生成安全文件名
+    # [CN] hash [CN]
     name_hash = hashlib.md5(filename.encode("utf-8")).hexdigest()[:8]
-    # 尽量保留原始文件名中的 ASCII 部分
+    # [CN] ASCII [CN]
     ascii_part = "".join(c for c in stem if c.isascii() and (c.isalnum() or c in "-_."))[:20]
     safe_name = f"{ascii_part}_{name_hash}{suffix}" if ascii_part else f"img_{name_hash}{suffix}"
     return safe_name
 
 
 def delete_from_storage(bucket: str, remote_name: str) -> None:
-    """从 Storage 删除文件。"""
+    """_ Storage _"""
     supabase = get_supabase()
     supabase.storage.from_(bucket).remove([remote_name])
 
 
 def _guess_mime(path: Path) -> str:
-    """根据扩展名推断 MIME 类型。"""
+    """_ MIME _"""
     suffix = path.suffix.lower()
     mime_map = {
         ".png": "image/png",
@@ -222,11 +222,11 @@ def _guess_mime(path: Path) -> str:
 
 
 # ============================================================
-# 快速诊断
+# [CN]
 # ============================================================
 
 def check_connection() -> dict:
-    """测试 Supabase 连接状态。"""
+    """_ Supabase _"""
     try:
         supabase = get_supabase()
         count = count_images()
@@ -242,7 +242,7 @@ def check_connection() -> dict:
 
 
 # ============================================================
-# 命令行测试入口
+# [CN]
 # ============================================================
 
 if __name__ == "__main__":

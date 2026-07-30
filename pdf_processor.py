@@ -3,22 +3,22 @@ if sys.stdout.encoding != "utf-8":
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
 
 """
-pdf_processor — PDF 文档解析与摘要生成模块
+pdf_processor — PDF _
 
-功能：
-  1. 从 PDF 中提取所有嵌入图片
-  2. 提取 PDF 全文文本
-  3. 调用 AI 生成 300 字文档摘要
-  4. 将摘要作为 extra_description 传入图像索引流程
+_
+  1. _ PDF _
+  2. _ PDF _
+  3. _ AI _ 300 _Doc summary
+  4. _ extra_description _
 
-依赖：
-  - PyMuPDF (fitz) — PDF 解析
-  - zhipuai SDK — 摘要生成
-  - upload_test — 图片处理核心
+_
+  - PyMuPDF (fitz) — PDF _
+  - zhipuai SDK — _
+  - upload_test — _
 
-使用示例：
+_
   from pdf_processor import process_pdf
-  process_pdf("report.pdf", uploader="万里")
+  process_pdf("report.pdf", uploader="_")
 """
 
 import os
@@ -42,17 +42,17 @@ UPLOADS_DIR = BASE_DIR / "uploads"
 
 
 def extract_images_from_pdf(pdf_path: str | Path) -> list[Path]:
-    """从 PDF 每一页中提取嵌入图片，保存到 uploads/ 目录。
+    """_ PDF _ uploads/ _
 
     Args:
-        pdf_path: PDF 文件路径。
+        pdf_path: PDF _
 
     Returns:
-        list[Path]: 提取出的图片文件路径列表。
+        list[Path]: _
     """
     pdf_path = Path(pdf_path)
     if not pdf_path.exists():
-        raise FileNotFoundError(f"文档不存在: {pdf_path}")
+        raise FileNotFoundError(f"Document not found: {pdf_path}")
 
     doc = fitz.open(str(pdf_path))
     image_paths = []
@@ -85,18 +85,18 @@ def extract_images_from_pdf(pdf_path: str | Path) -> list[Path]:
 
 
 def render_first_page(pdf_path: str | Path) -> Path:
-    """将 PDF 第一页渲染为图片（当 PDF 没有嵌入图片时的 fallback）。
+    """_ PDF _ PDF _ fallback_
 
     Args:
-        pdf_path: PDF 文件路径。
+        pdf_path: PDF _
 
     Returns:
-        Path: 渲染出的图片路径。
+        Path: _
     """
     pdf_path = Path(pdf_path)
     doc = fitz.open(str(pdf_path))
     page = doc[0]
-    # 渲染为 2x 分辨率图片
+    # [CN] 2x [CN]
     mat = fitz.Matrix(2, 2)
     pix = page.get_pixmap(matrix=mat)
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
@@ -109,13 +109,13 @@ def render_first_page(pdf_path: str | Path) -> Path:
 
 
 def extract_text_from_pdf(pdf_path: str | Path) -> str:
-    """从 PDF 中提取所有文本内容。
+    """_ PDF _
 
     Args:
-        pdf_path: PDF 文件路径。
+        pdf_path: PDF _
 
     Returns:
-        str: PDF 全文文本。
+        str: PDF _
     """
     pdf_path = Path(pdf_path)
     doc = fitz.open(str(pdf_path))
@@ -123,26 +123,26 @@ def extract_text_from_pdf(pdf_path: str | Path) -> str:
     for page_num in range(len(doc)):
         text = doc[page_num].get_text()
         if text.strip():
-            parts.append(f"[第{page_num + 1}页]\n{text}")
+            parts.append(f"[_{page_num + 1}_]\n{text}")
     doc.close()
     return "\n\n".join(parts)
 
 
 def generate_pdf_summary(pdf_path: str | Path, max_chars: int = 300) -> str:
-    """调用 AI 对 PDF 内容生成摘要。
+    """_ AI _ PDF _
 
     Args:
-        pdf_path: PDF 文件路径。
-        max_chars: 摘要最大字数，默认 300。
+        pdf_path: PDF _
+        max_chars: _ 300_
 
     Returns:
-        str: 中文摘要。
+        str: _
     """
     pdf_path = Path(pdf_path)
     full_text = extract_text_from_pdf(pdf_path)
 
     if not full_text.strip():
-        return "（文档无文本内容）"
+        return "(no text content)"
 
     text_for_summary = full_text[:4000] if len(full_text) > 4000 else full_text
 
@@ -153,9 +153,9 @@ def generate_pdf_summary(pdf_path: str | Path, max_chars: int = 300) -> str:
                 {
                     "role": "system",
                     "content": (
-                        f"你是一个文档摘要助手。请根据文档内容生成一段{max_chars}字以内的中文摘要，"
-                        f"重点提取核心事实：涉及人物、关键事件、数据指标、结论观点。"
-                        f"不要评价，只输出事实。"
+                        f"你是一个Doc summary助手。请根据文档内容生成一段{max_chars}字以内的中文摘要，"
+                        f"_"
+                        f"_"
                     ),
                 },
                 {"role": "user", "content": text_for_summary},
@@ -163,24 +163,24 @@ def generate_pdf_summary(pdf_path: str | Path, max_chars: int = 300) -> str:
         )
         return response.choices[0].message.content
     except Exception as e:
-        print(f"   Warning: AI 摘要生成失败 ({e})，使用原文前{max_chars}字")
+        print(f"   Warning: AI summary generation failed ({e})_{max_chars}_")
         return full_text[:max_chars]
 
 
 def process_pdf(pdf_path: str, uploader: str = "test_user") -> dict:
-    """处理 PDF 导入：提取图片 + 生成摘要 + 向量化入库。
+    """_ PDF _ + _ + _
 
-    完整流程：
-      1. 上传原始 PDF 到 Supabase Storage（用于来源追溯）
-      2. 解析 PDF，提取所有嵌入图片
-      3. 如果没有图片，渲染第一页作为封面
-      4. 提取全文文本
-      5. AI 生成 300 字摘要
-      6. 对每张图片调用 process_image()，摘要作为 extra_description，来源指向原始 PDF
+    _
+      1. _ PDF _ Supabase Storage_
+      2. _ PDF_
+      3. _
+      4. _
+      5. AI _ 300 _
+      6. _ process_image()_ extra_description_ PDF
 
     Args:
-        pdf_path: PDF 文件路径。
-        uploader: 上传人名称。
+        pdf_path: PDF _
+        uploader: _
 
     Returns:
         dict: {pdf_name, page_count, summary, image_count, image_results}
@@ -195,7 +195,7 @@ def process_pdf(pdf_path: str, uploader: str = "test_user") -> dict:
     print(f"Processing PDF: {pdf_name}")
     print(f"{'=' * 60}")
 
-    # 0. 上传原始 PDF 到 Supabase Storage
+    # 0. [CN] PDF [CN] Supabase Storage
     print("\n[Step 0] Uploading original PDF to Storage...")
     try:
         source_url = upload_to_storage("uploads", pdf_path)
@@ -204,12 +204,12 @@ def process_pdf(pdf_path: str, uploader: str = "test_user") -> dict:
         print(f"   Warning: PDF upload failed ({e}), skipping source link")
         source_url = ""
 
-    # 0.5. 获取页数
+    # 0.5. [CN]
     doc = fitz.open(str(pdf_path))
     page_count = len(doc)
     doc.close()
 
-    # 1. 提取图片
+    # 1. [CN]
     print("\n[Step 1] Extracting images...")
     image_paths = extract_images_from_pdf(pdf_path)
 
@@ -220,18 +220,18 @@ def process_pdf(pdf_path: str, uploader: str = "test_user") -> dict:
 
     print(f"   {len(image_paths)} image(s) to index")
 
-    # 2. 提取文本
+    # 2. [CN]
     print(f"\n[Step 2] Extracting text ({page_count} pages)...")
     full_text = extract_text_from_pdf(pdf_path)
     text_preview = full_text[:150] + "..." if len(full_text) > 150 else full_text
     print(f"   Text preview: {text_preview}")
 
-    # 3. 生成摘要
+    # 3. [CN]
     print("\n[Step 3] Generating summary...")
     summary = generate_pdf_summary(pdf_path, max_chars=300)
     print(f"   Summary: {summary}")
 
-    # 4. 每张图片向量化（带来源信息）
+    # 4. [CN]
     source_label = f"{pdf_name}.pdf"
     print(f"\n[Step 4] Indexing {len(image_paths)} images with summary...")
     image_results = []
@@ -240,7 +240,7 @@ def process_pdf(pdf_path: str, uploader: str = "test_user") -> dict:
             result = process_image(
                 str(img_path),
                 uploader=uploader,
-                extra_description=f"[PDF摘要|{page_count}页] {summary}",
+                extra_description=f"[PDF summary|{page_count}_] {summary}",
                 source_file=source_label,
                 source_url=source_url,
             )
@@ -263,7 +263,7 @@ def process_pdf(pdf_path: str, uploader: str = "test_user") -> dict:
 
 
 # ============================================================
-# 命令行入口
+# [CN]
 # ============================================================
 
 if __name__ == "__main__":
@@ -271,7 +271,7 @@ if __name__ == "__main__":
 
     if len(sys.argv) < 2:
         print("Usage: python pdf_processor.py <pdf_file_path> [uploader_name]")
-        print("Example: python pdf_processor.py report.pdf 万里")
+        print("Example: python pdf_processor.py report.pdf _")
         sys.exit(1)
 
     pdf_file = sys.argv[1]

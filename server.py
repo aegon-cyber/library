@@ -1,17 +1,17 @@
 """
-server.py — library-agent API 服务器
+server.py — library-agent API _
 
-提供 REST API 给前端调用，封装 ZhipuAI + Supabase 流水线。
+_ REST API _ ZhipuAI + Supabase _
 
-启动: python server.py
-端口: 5050
+_: python server.py
+_: 5050
 """
 
 import io
 import sys
 import os as _os
 
-# 强制 UTF-8，解决 Windows GBK 编码问题（必须在最前面）
+# [CN] UTF-8[CN] Windows GBK [CN]
 _os.environ.setdefault("PYTHONIOENCODING", "utf-8")
 _os.environ.setdefault("PYTHONUTF8", "1")
 if sys.stdout.encoding != "utf-8":
@@ -19,7 +19,7 @@ if sys.stdout.encoding != "utf-8":
 if sys.stderr.encoding != "utf-8":
     sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 
-# 全局替换 print：任何模块内的 print 都走 UTF-8-safe 通道
+# [CN] print[CN] print [CN] UTF-8-safe [CN]
 import builtins
 _real_print = builtins.print
 def _utf8_print(*args, **kwargs):
@@ -60,13 +60,13 @@ import json as _json
 app = Flask(__name__, static_folder=None)
 CORS(app)
 
-# ── Windows GBK 中间件：兜底捕获编码错误 ──
+# ── Windows GBK [CN] ──
 @app.errorhandler(UnicodeEncodeError)
 def handle_gbk_error(e):
     return jsonify({"error": "Server encoding error, please try again"}), 500
 
 
-# 本地临时目录
+# [CN]
 TEMP_DIR = BASE_DIR / "temp_uploads"
 TEMP_DIR.mkdir(exist_ok=True)
 
@@ -75,18 +75,18 @@ THUMB_DIR.mkdir(exist_ok=True)
 
 
 # ============================================================
-# 自然语言解析
+# [CN]
 # ============================================================
 
 def parse_query(raw_input: str) -> dict:
-    """用 LLM 从自然语言中提取搜索意图和过滤条件。
+    """_ LLM _
 
-    例如 "京东七鲜七月份的饮料海报"
-      → {query: "饮料海报", uploader: "京东七鲜", date_from: "2026-07-01", date_to: "2026-07-31"}
+    _ "_"
+      → {query: "_", uploader: "_", date_from: "2026-07-01", date_to: "2026-07-31"}
 
-    如果没有提到上传人或日期，对应字段返回 None。
+    _ None_
     """
-    # 先查现有上传人名单，帮 LLM 做精确判断
+    # [CN] LLM [CN]
     try:
         all_images = db_get_all_images()
         known_uploaders = list(set(img.get("uploader", "") for img in all_images if img.get("uploader")))
@@ -95,32 +95,32 @@ def parse_query(raw_input: str) -> dict:
 
     uploader_hint = ""
     if known_uploaders:
-        uploader_hint = f"\n当前已知上传人（只有精确匹配才算过滤条件）：{_json.dumps(known_uploaders, ensure_ascii=False)}"
+        uploader_hint = f"\n_{_json.dumps(known_uploaders, ensure_ascii=False)}"
 
     prompt = f"""你是一个搜索意图解析器。从用户输入中提取以下信息，输出纯JSON：
 
-1. query: 去掉上传人、日期等条件后的纯内容搜索词。如果没有实质内容则保留原始输入
-2. uploader: 如果用户提到了和已知上传人列表精确匹配的名字则输出，否则null
-3. date_from / date_to: 如果用户提到时间范围则输出 YYYY-MM-DD 格式，否则null
-   - "七月" → 当年7月1日~7月31日
-   - "上周" / "昨天" → 根据当前日期 {datetime.now().strftime('%Y-%m-%d')} 推算
-   - "最近一个月" → 30天前到今天
+1. query: _
+2. uploader: _null
+3. date_from / date_to: _ YYYY-MM-DD _null
+   - "_" → _7_1_~7_31_
+   - "_" / "_" → _ {datetime.now().strftime('%Y-%m-%d')} _
+   - "_" → 30_
 
-⚠️ 只有明确提到上传来源时才填 uploader。像"万里长城""百里挑一"里的"万里""百里"不是人名，要填null。
+⚠️ _ uploader_"_""_"_"_""_"_null_
 {uploader_hint}
 
-用户输入：{raw_input}
+_{raw_input}
 
-只输出JSON，不要其他文字："""
+_JSON_"""
 
     try:
         response = client.chat.completions.create(
-            model=VISION_MODEL,  # 文本能力足够，轻量任务
+            model=VISION_MODEL,  # _
             messages=[{"role": "user", "content": prompt}],
             temperature=0,
         )
         text = response.choices[0].message.content.strip()
-        # 清理可能的 markdown 代码块包裹
+        # [CN] markdown [CN]
         if text.startswith("```"):
             text = text.split("\n", 1)[1]
             if text.endswith("```"):
@@ -133,17 +133,17 @@ def parse_query(raw_input: str) -> dict:
             "date_to": parsed.get("date_to"),
         }
     except Exception:
-        # 解析失败就原样返回
+        # [CN]
         return {"query": raw_input, "uploader": None, "date_from": None, "date_to": None}
 
 
 # ============================================================
-# API 路由
+# API [CN]
 # ============================================================
 
 @app.route("/api/process", methods=["POST"])
 def api_process():
-    """上传文件 → AI处理 → 向量化 → Supabase存储。支持图片、PDF、DOCX。"""
+    """_ → AI_ → _ → Supabase_PDF_DOCX_"""
     try:
         return _handle_process()
     except UnicodeEncodeError:
@@ -157,7 +157,7 @@ import logging as _logging
 _logging.getLogger('werkzeug').setLevel(_logging.ERROR)
 
 def _handle_process():
-    # ── 先提取文件 ──
+    # ── [CN] ──
     if "file" not in request.files:
         return jsonify({"error": "No file field in request"}), 400
 
@@ -176,7 +176,7 @@ def _handle_process():
     if not safe_fn or not safe_fn.strip('._-'):
         import hashlib
         safe_fn = 'upload_' + hashlib.md5(fn.encode('utf-8')).hexdigest()[:8]
-    # 保留扩展名
+    # [CN]
     if '.' in fn:
         _, ext = fn.rsplit('.', 1)
         if ext.lower() in ('docx', 'pdf', 'png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp'):
@@ -190,7 +190,7 @@ def _handle_process():
     temp_path = Path(tmp.name)
 
     if 'multipart/form-data' in content_type:
-        # 手动解析 multipart，跳过 Werkzeug
+        # [CN] multipart[CN] Werkzeug
         import email.parser as _ep, io as _io
         from email.policy import default as _default_policy
         boundary = content_type.split('boundary=', 1)[-1].strip()
@@ -198,11 +198,11 @@ def _handle_process():
             boundary = boundary[1:-1]
         boundary_bytes = boundary.encode('utf-8')
 
-        # 按 boundary 拆分
+        # [CN] boundary [CN]
         parts = raw_data.split(b'--' + boundary_bytes)
         for part in parts:
             if b'name="file"' in part[:200] or b'name=file' in part[:200]:
-                # 提取 filename
+                # [CN] filename
                 header_end = part.find(b'\r\n\r\n')
                 if header_end == -1:
                     continue
@@ -210,7 +210,7 @@ def _handle_process():
                 for line in headers.split('\r\n'):
                     if 'filename=' in line:
                         fn = line.split('filename=', 1)[-1].strip().strip('"')
-                # 提取文件数据
+                # [CN]
                 file_data = part[header_end + 4:]
                 if file_data.endswith(b'\r\n'):
                     file_data = file_data[:-2]
@@ -228,7 +228,7 @@ def _handle_process():
     if fn == '':
         return jsonify({"error": "Empty filename"}), 400
 
-    extra_description = None  # multipart 里可能有
+    extra_description = None  # multipart _
 
     suffix = ''.join(Path(fn).suffixes) if '.' in fn else ''
     if not suffix:
@@ -239,7 +239,7 @@ def _handle_process():
     tmp.close()
     temp_path = Path(tmp.name)
 
-    # ── PDF 分支 ──
+    # ── PDF [CN] ──
     if suffix == ".pdf":
         try:
             from pdf_processor import process_pdf
@@ -257,17 +257,17 @@ def _handle_process():
             traceback.print_exc()
             return jsonify({"error": str(e)}), 500
 
-    # ── DOCX 分支（子进程模式，绕开 Windows GBK 限制）──
+    # ── DOCX [CN] Windows GBK [CN]──
     if suffix == ".docx":
         import subprocess, json as _json2
-        # 把参数写入临时 JSON 文件，避免命令行编码问题
+        # [CN] JSON [CN]
         args_file = TEMP_DIR / f"_args_{temp_path.stem}.json"
         args_file.write_text(_json2.dumps({
             "path": temp_path.as_posix(),
             "uploader": uploader
         }), encoding="utf-8")
 
-        # 用独立的 Python 脚本处理
+        # [CN] Python [CN]
         worker_script = TEMP_DIR / "_docx_worker.py"
         worker_script.write_text(r'''
 import sys, json
@@ -297,19 +297,19 @@ print("__OK__" + json.dumps(result, ensure_ascii=False))
         except Exception as e:
             return jsonify({"error": str(e)}), 500
         finally:
-            # 清理临时文件
+            # [CN]
             try: args_file.unlink()
             except: pass
             try: worker_script.unlink()
             except: pass
 
-    # ── 图片分支 ──
+    # ── [CN] ──
     img_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
     if suffix not in img_exts:
         return jsonify({"error": f"Unsupported file type: {suffix}"}), 400
 
     try:
-        # 1. 生成缩略图
+        # 1. [CN]
         img = Image.open(temp_path)
         thumb_width = 200
         thumb_height = int(img.height * (thumb_width / img.width))
@@ -317,11 +317,11 @@ print("__OK__" + json.dumps(result, ensure_ascii=False))
         thumb_path = THUMB_DIR / f"thumb_{temp_path.stem}.png"
         img.save(thumb_path)
 
-        # 2. 上传到 Supabase Storage
+        # 2. [CN] Supabase Storage
         file_url = upload_to_storage("uploads", temp_path)
         thumb_url = upload_to_storage("thumbnails", thumb_path)
 
-        # 3. AI 描述 + 向量化
+        # 3. AI [CN] + [CN]
         description = describe_image(temp_path)
         full_desc = description
         if extra_description:
@@ -329,7 +329,7 @@ print("__OK__" + json.dumps(result, ensure_ascii=False))
 
         embedding = get_embedding(full_desc)
 
-        # 4. 存入 Supabase DB
+        # 4. [CN] Supabase DB
         upload_time = datetime.now().isoformat()
         result = db_add_image({
             "file_name": safe_name,
@@ -361,7 +361,7 @@ print("__OK__" + json.dumps(result, ensure_ascii=False))
 
 @app.route("/api/search", methods=["POST"])
 def api_search():
-    """语义搜索图片 — 支持自然语言过滤"""
+    """_ — _"""
     body = request.get_json(silent=True) or {}
     raw_query = body.get("query", "")
     top_n = body.get("top_n", 10)
@@ -369,13 +369,13 @@ def api_search():
     if not raw_query:
         return jsonify({"error": "Missing query parameter"}), 400
 
-    # 1. LLM 解析自然语言 → 提取过滤条件
+    # 1. LLM [CN] → [CN]
     parsed = parse_query(raw_query)
     search_query = parsed["query"]
 
-    # 2. 构建过滤器（LLM 解析结果 + 前端手动覆盖）
+    # 2. [CN]LLM [CN] + [CN]
     filters = {}
-    # 前端显式传入的优先
+    # [CN]
     if body.get("uploader"):
         filters["uploader"] = body["uploader"]
     elif parsed.get("uploader"):
@@ -394,7 +394,7 @@ def api_search():
     try:
         results = search_similar(search_query, top_n=top_n, filters=(filters if filters else None))
 
-        # 标注解析结果，前端可以用
+        # [CN]
         return jsonify({
             "parsed": {
                 "query": search_query,
@@ -410,7 +410,7 @@ def api_search():
 
 @app.route("/api/debug", methods=["GET"])
 def api_debug():
-    """测试各组件"""
+    """_"""
     results = {}
     # 1. Supabase
     try:
@@ -445,7 +445,7 @@ def api_debug():
 
 @app.route("/api/images", methods=["GET"])
 def api_list_images():
-    """获取所有已索引图片"""
+    """_"""
     try:
         images = db_get_all_images()
         return jsonify(images)
@@ -454,7 +454,7 @@ def api_list_images():
 
 
 # ============================================================
-# 静态文件
+# [CN]
 # ============================================================
 
 @app.route("/upload-web/")
@@ -487,7 +487,7 @@ def index():
 
 
 # ============================================================
-# 启动
+# [CN]
 # ============================================================
 
 if __name__ == "__main__":
