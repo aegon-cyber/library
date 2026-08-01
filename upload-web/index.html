@@ -183,6 +183,15 @@ const uploadBtn = document.getElementById('uploadBtn');
 const results   = document.getElementById('results');
 
 let fileQueue = [];  // { id, file, status }
+let isProcessing = false;
+
+// Warn before leaving during upload
+window.addEventListener('beforeunload', e => {
+  if (isProcessing) {
+    e.preventDefault();
+    e.returnValue = 'Upload in progress, leaving will cancel it.';
+  }
+});
 
 // ── Drag & drop ──
 dropzone.addEventListener('click', () => fileInput.click());
@@ -288,6 +297,7 @@ uploadBtn.addEventListener('click', async () => {
   if (!pending.length) return;
 
   uploadBtn.disabled = true;
+  isProcessing = true;
   const uploader = document.getElementById('uploader').value || 'test_user';
   results.innerHTML = '';
 
@@ -324,6 +334,7 @@ uploadBtn.addEventListener('click', async () => {
     results.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }
 
+  isProcessing = false;
   updateUI();
 });
 </script>
