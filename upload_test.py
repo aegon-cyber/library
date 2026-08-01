@@ -355,14 +355,36 @@ def search_similar(query: str, top_n: int = 3, filters: dict = None) -> list[dic
         print("   No images match filters")
         return []
 
-    # 3. [CN]
-    print(f"\nResults (top {len(results)}):")
+    # Source document boosting: pull in same-source images
+    from supabase_client import get_supabase
+    supabase = get_supabase()
+    seen_ids = {r["id"] for r in results}
+    boosted = []
+    for r in results:
+        boosted.append(r)
+        sf = r.get("source_file", "")
+        if sf and len(boosted) < top_n * 3:
+            # Get siblings from same source doc
+            siblings = supabase.table("images").select(
+                "id, file_name, file_path, thumbnail_path, uploader, upload_time, description, extra_description, source_file, source_url"
+            ).eq("source_file", sf).is_("duplicate_of", "null").execute()
+            for sib in (siblings.data or []):
+                if sib["id"] not in seen_ids:
+                    sib["similarity"] = round(r["similarity"] * 0.95, 4)  # slightly lower than match
+                    sib["boosted"] = True
+                    boosted.append(sib)
+                    seen_ids.add(sib["id"])
+    results = boosted[: max(top_n * 3, 20)]
+
+    # 3. Print results
+    print(f"\nResults (top {len(results)}, source-boosted):")
     print("-" * 60)
     for i, r in enumerate(results, 1):
         upload_time = r.get("upload_time", "")
         if isinstance(upload_time, str):
             upload_time = upload_time[:10]
-        print(f"  {i}. {r['file_name']}")
+        boost_tag = " [same doc]" if r.get("boosted") else ""
+        print(f"  {i}. {r['file_name']}{boost_tag}")
         print(f"     Similarity: {r['similarity']:.4f}")
         print(f"     Path: {r['file_path']}")
         print(f"     Uploader: {r['uploader']} | Time: {upload_time}")
