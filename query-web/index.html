@@ -99,6 +99,18 @@
              border:2px solid var(--border); border-top-color:var(--accent);
              border-radius:50%; animation:spin .6s linear infinite; }
   @keyframes spin { to{transform:rotate(360deg);} }
+
+  /* Lightbox */
+  .lightbox {
+    display:none; position:fixed; top:0; left:0; right:0; bottom:0;
+    background:rgba(0,0,0,0.9); z-index:1000; cursor:pointer;
+    align-items:center; justify-content:center;
+  }
+  .lightbox.show { display:flex; }
+  .lightbox img {
+    max-width:92vw; max-height:92vh; border-radius:8px;
+    box-shadow:0 0 60px rgba(0,0,0,0.5); cursor:auto;
+  }
 </style>
 </head>
 <body>
@@ -129,6 +141,11 @@
   <div class="error" id="error"></div>
 
   <div id="results"></div>
+
+  <div class="lightbox" id="lightbox" onclick="closeLightbox()">
+    <img id="lightboxImg" src="" alt="">
+  </div>
+
   <div class="empty" id="empty">
     <div class="icon">🔎</div>
     <p>输入描述开始搜索</p>
@@ -234,6 +251,8 @@ async function doSearch() {
       return `
       <div class="result-card">
         <img src="${r.thumbnail_path || r.file_path}" alt="${r.file_name}"
+             onclick="event.stopPropagation();openLightbox('${r.file_path}')"
+             style="cursor:pointer;"
              onerror="this.style.display='none'">
         <div class="result-info">
           <div class="name">${r.file_name}</div>
@@ -257,6 +276,14 @@ async function doSearch() {
     searchBtn.disabled = false;
     spinner.style.display = 'none';
   }
+}
+
+function openLightbox(url) {
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightbox').classList.add('show');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('show');
 }
 
 function showError(msg) {
