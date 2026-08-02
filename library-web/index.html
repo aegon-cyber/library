@@ -118,8 +118,9 @@ function groupBySource(images) {
       key = src;
       type = src.toLowerCase().endsWith('.pdf') ? 'pdf' : 'docx';
     }
-    if (!groups[key]) groups[key] = { type, name: src || img.file_name, url: img.source_url || '', images: [], uploader: img.uploader, upload_time: img.upload_time, thumbnail: img.thumbnail_path || '' };
+    if (!groups[key]) groups[key] = { type, name: src || img.file_name, url: '', images: [], uploader: img.uploader, upload_time: img.upload_time, thumbnail: '' };
     groups[key].images.push(img);
+    if (!groups[key].url && img.source_url) groups[key].url = img.source_url;
     if (!groups[key].thumbnail && img.thumbnail_path) groups[key].thumbnail = img.thumbnail_path;
     // Keep earliest upload_time
     if ((img.upload_time || '') < (groups[key].upload_time || '')) {
