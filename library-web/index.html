@@ -118,8 +118,9 @@ function groupBySource(images) {
       key = src;
       type = src.toLowerCase().endsWith('.pdf') ? 'pdf' : 'docx';
     }
-    if (!groups[key]) groups[key] = { type, name: src || img.file_name, url: img.source_url || '', images: [], uploader: img.uploader, upload_time: img.upload_time };
+    if (!groups[key]) groups[key] = { type, name: src || img.file_name, url: img.source_url || '', images: [], uploader: img.uploader, upload_time: img.upload_time, thumbnail: img.thumbnail_path || '' };
     groups[key].images.push(img);
+    if (!groups[key].thumbnail && img.thumbnail_path) groups[key].thumbnail = img.thumbnail_path;
     // Keep earliest upload_time
     if ((img.upload_time || '') < (groups[key].upload_time || '')) {
       groups[key].upload_time = img.upload_time;
@@ -155,9 +156,14 @@ function renderList() {
     const iconMap = { docx:'📄', pdf:'📕', image:'🖼' };
     const time = (g.upload_time || '').slice(0,10);
     const imgCount = g.images.length;
+    // Thumbnail: use first image's thumbnail or file_path
+    const thumb = g.thumbnail || '';
+    const dl = g.url ? `<a href="${g.url}" download style="color:var(--accent);text-decoration:none;font-size:0.8rem;" title="下载来源文件">⬇</a>` : '';
     return `
     <div class="file-card">
-      <div class="icon ${g.type}">${iconMap[g.type]}</div>
+      <div class="icon ${g.type}">
+        ${thumb ? `<img src="${thumb}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;">` : iconMap[g.type]}
+      </div>
       <div class="info">
         <div class="name">${g.name || '(unnamed)'}</div>
         <div class="meta">
@@ -166,6 +172,7 @@ function renderList() {
         </div>
       </div>
       <div class="images-count">${imgCount} 张图</div>
+      ${dl ? `<div class="dl-btn">${dl}</div>` : ''}
     </div>`;
   }).join('');
 }
