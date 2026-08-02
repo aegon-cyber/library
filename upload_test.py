@@ -235,10 +235,9 @@ def process_image(image_path: str, uploader: str = "test_user", extra_descriptio
 
     # 2. [CN] uploads/ [CN]
     local_dest = UPLOADS_DIR / image_path.name
+    import shutil
+    shutil.copy2(image_path, local_dest)
     img = Image.open(image_path)
-    if img.mode in ('RGBA', 'P', 'LA'):
-        img = img.convert('RGB')
-    img.save(local_dest)
 
     # 3. [CN] Pillow [CN]
     thumb_path = generate_thumbnail(image_path)
