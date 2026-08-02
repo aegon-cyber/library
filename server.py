@@ -387,6 +387,21 @@ def api_debug():
     return jsonify(results)
 
 
+@app.route("/api/dedup", methods=["POST"])
+def api_dedup():
+    """Run pixel-level dedup. Called by cron/GitHub Actions."""
+    import subprocess, sys
+    try:
+        proc = subprocess.run(
+            [sys.executable, str(BASE_DIR / "dedup_images.py")],
+            capture_output=True, text=True, timeout=300,
+            encoding="utf-8", errors="replace",
+        )
+        return jsonify({"ok": True, "output": proc.stdout[-500:]})
+    except Exception as e:
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
 @app.route("/api/images", methods=["GET"])
 def api_list_images():
     """_"""

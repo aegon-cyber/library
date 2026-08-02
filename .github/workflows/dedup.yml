@@ -1,0 +1,14 @@
+name: Daily Dedup
+
+on:
+  schedule:
+    - cron: '0 3 * * *'  # 每天 3:00 UTC
+  workflow_dispatch:      # 允许手动触发
+
+jobs:
+  dedup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Trigger dedup
+        run: |
+          curl -X POST "${{ secrets.RENDER_URL }}/api/dedup"
