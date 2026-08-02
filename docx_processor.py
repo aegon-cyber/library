@@ -85,6 +85,8 @@ def extract_images_from_docx(docx_path: str | Path) -> list[Path]:
             image_paths.append(dest_path)
             print(f"   Extracted: {dest_name}")
 
+    # Release reference for garbage collection (Windows lock fix)
+    del doc
     return image_paths
 
 

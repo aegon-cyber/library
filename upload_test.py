@@ -158,7 +158,7 @@ def describe_image(image_path: str | Path) -> str:
     }
     mime_type = mime_map.get(suffix, "image/png")
 
-    try:
+    def _call():
         response = client.chat.completions.create(
             model=VISION_MODEL,
             messages=[
@@ -179,30 +179,35 @@ def describe_image(image_path: str | Path) -> str:
                 }
             ]
         )
-        description = response.choices[0].message.content
-        return description
+        return response.choices[0].message.content
+    try:
+        return _retry(_call)
     except Exception as e:
         raise Exception(f"GLM-5V-Turbo vision recognition failed: {e}")
 
 
+import time as _time
+
+def _retry(func, *args, max_retries=3, **kwargs):
+    """Call func with retry on rate limit (429)."""
+    for attempt in range(max_retries):
+        try:
+            return func(*args, **kwargs)
+        except Exception as e:
+            msg = str(e)
+            if ('429' in msg or '1302' in msg or '速率限制' in msg) and attempt < max_retries - 1:
+                _time.sleep(3)
+                continue
+            raise
+
+
 def get_embedding(text: str) -> list[float]:
-    """_AI Embedding-3 API_
-
-    Args:
-        text: _
-
-    Returns:
-        list[float]: _
-
-    Raises:
-        Exception: API_
-    """
-    try:
-        response = client.embeddings.create(
-            model=EMBEDDING_MODEL,
-            input=text
-        )
+    """_AI Embedding-3 API_"""
+    def _call():
+        response = client.embeddings.create(model=EMBEDDING_MODEL, input=text)
         return response.data[0].embedding
+    try:
+        return _retry(_call)
     except Exception as e:
         raise Exception(f"Embedding-3 embedding failed: {e}")
 
@@ -235,9 +240,11 @@ def process_image(image_path: str, uploader: str = "test_user", extra_descriptio
 
     # 2. [CN] uploads/ [CN]
     local_dest = UPLOADS_DIR / image_path.name
+    # Only copy if source != destination (avoids self-copy lock)
     import shutil
-    shutil.copy2(image_path, local_dest)
-    img = Image.open(image_path)
+    if image_path.resolve() != local_dest.resolve():
+        shutil.copy2(image_path, local_dest)
+    img = Image.open(local_dest)
 
     # 3. [CN] Pillow [CN]
     thumb_path = generate_thumbnail(image_path)
