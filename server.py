@@ -212,95 +212,29 @@ def _handle_process():
     tmp.close()
     temp_path = Path(tmp.name)
 
-    extra_description = None
+    # ── Async: spawn background thread, return immediately ──
+    import threading
 
-    # ── PDF [CN] ──
-    if suffix == ".pdf":
+    def _process_bg():
         try:
-            from pdf_processor import process_pdf
-            result = process_pdf(temp_path.as_posix(), uploader=uploader, source_name=fn)
-            return jsonify({
-                "type": "pdf",
-                "name": result.get("pdf_name", ""),
-                "page_count": result.get("page_count", 0),
-                "summary": result.get("summary", ""),
-                "image_count": result.get("image_count", 0),
-                "indexed_count": result.get("indexed_count", 0),
-            })
+            if suffix == ".pdf":
+                from pdf_processor import process_pdf
+                process_pdf(temp_path.as_posix(), uploader=uploader, source_name=fn)
+            elif suffix == ".docx":
+                from docx_processor import process_docx
+                process_docx(temp_path.as_posix(), uploader=uploader, source_name=fn)
+            else:
+                from upload_test import process_image
+                process_image(str(temp_path), uploader=uploader)
         except Exception as e:
-            import traceback
-            traceback.print_exc()
-            return _err(e)
+            print(f"BG process failed: {e}")
+        finally:
+            try: temp_path.unlink()
+            except: pass
 
-    # ── DOCX [CN] ──
-    if suffix == ".docx":
-        try:
-            from docx_processor import process_docx
-            result = process_docx(temp_path.as_posix(), uploader=uploader, source_name=fn)
-            return jsonify({
-                "type": "docx",
-                "name": result.get("docx_name", ""),
-                "summary": str(result.get("summary", "")),
-                "image_count": result.get("image_count", 0),
-                "indexed_count": len(result.get("image_results", [])),
-            })
-        except Exception as e:
-            return _err(e)
-
-    # ── [CN] ──
-    img_exts = {".png", ".jpg", ".jpeg", ".gif", ".webp", ".bmp"}
-    if suffix not in img_exts:
-        return jsonify({"error": f"Unsupported file type: {suffix}"}), 400
-
-    try:
-        # 1. [CN]
-        img = Image.open(temp_path)
-        thumb_width = 200
-        thumb_height = int(img.height * (thumb_width / img.width))
-        img.thumbnail((thumb_width, thumb_height), Image.LANCZOS)
-        thumb_path = THUMB_DIR / f"thumb_{temp_path.stem}.png"
-        img.save(thumb_path)
-
-        # 2. [CN] Supabase Storage
-        file_url = upload_to_storage("uploads", temp_path)
-        thumb_url = upload_to_storage("thumbnails", thumb_path)
-
-        # 3. AI [CN] + [CN]
-        description = describe_image(temp_path)
-        full_desc = description
-        if extra_description:
-            full_desc = f"{description}\n{extra_description}"
-
-        embedding = get_embedding(full_desc)
-
-        # 4. [CN] Supabase DB
-        upload_time = datetime.now().isoformat()
-        result = db_add_image({
-            "file_name": fn,
-            "file_path": file_url,
-            "thumbnail_path": thumb_url,
-            "uploader": uploader,
-            "upload_time": upload_time,
-            "description": description,
-            "extra_description": extra_description,
-            "source_file": fn,
-            "source_url": file_url,
-            "embedding": embedding,
-        })
-
-        return jsonify({
-            "type": "image",
-            "id": result.get("id"),
-            "file_name": fn,
-            "file_url": file_url,
-            "thumbnail_url": thumb_url,
-            "description": description,
-            "uploader": uploader,
-            "embedding_dim": len(embedding),
-        })
-
-    except Exception as e:
-        return _err(e)
+    t = threading.Thread(target=_process_bg, daemon=True)
+    t.start()
+    return jsonify({"type": "accepted", "file": fn})
 
 
 @app.route("/api/search", methods=["POST"])

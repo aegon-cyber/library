@@ -316,7 +316,8 @@ uploadBtn.addEventListener('click', async () => {
       if (resp.ok) {
         item.status = 'done';
         let summary = '';
-        if (data.type === 'pdf') summary = `PDF · ${data.page_count}页 · ${data.indexed_count}图`;
+        if (data.type === 'accepted') summary = '已接收，后台处理中…';
+        else if (data.type === 'pdf') summary = `PDF · ${data.page_count}页 · ${data.indexed_count}图`;
         else if (data.type === 'docx') summary = `DOCX · ${data.image_count}图`;
         else summary = `图片 · ${data.embedding_dim}维`;
         results.innerHTML += `<div class="result-item ok">✓ ${data.file_name || data.name} — ${summary}</div>`;
