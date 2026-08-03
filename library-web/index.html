@@ -6,10 +6,9 @@
 <title>LIBRARY AGENT — Library</title>
 <style>
   :root {
-    --bg: #F4F0E6; --card: #FFFFFF; --border: #000000; --text: #000000;
-    --accent-red: #FF5252; --accent-yellow: #FFE600; --accent-green: #00E676;
-    --accent-blue: #A6FAFF; --accent-purple: #C4A1FF;
-    --border-w: 3px; --shadow: 8px 8px 0px #000; --shadow-sm: 4px 4px 0px #000;
+    --bg: #FFF5F5; --card: #FFFFFF; --border: #1a1a1a; --text: #1a1a1a;
+    --red: #E53935; --red-light: #FFEBEE; --red-dark: #B71C1C;
+    --border-w: 2px; --shadow: 6px 6px 0px #1a1a1a; --shadow-sm: 3px 3px 0px #1a1a1a;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -22,8 +21,8 @@
   }
   .page-wrapper { width: 100%; max-width: 800px; }
   .global-header { margin-bottom: 24px; padding-left: 8px; }
-  .global-header h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; letter-spacing: -0.5px; text-shadow: 3px 3px 0px var(--accent-green); }
-  .global-header .subtitle { font-weight: 800; font-size: 1rem; background: #000; color: var(--accent-yellow); display: inline-block; padding: 4px 12px; border-radius: 4px; box-shadow: 2px 2px 0px var(--accent-red); }
+  .global-header h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; letter-spacing: -0.5px; text-shadow: 3px 3px 0px var(--red); }
+  .global-header .subtitle { font-weight: 800; font-size: 1rem; background: #000; color: var(--red-light); display: inline-block; padding: 4px 12px; border-radius: 4px; box-shadow: 2px 2px 0px var(--red); }
   .container { background: var(--card); border: var(--border-w) solid var(--border); border-radius: 12px; padding: 40px; box-shadow: var(--shadow); }
   .nav { display:flex; gap:16px; margin-bottom: 32px; border-bottom: var(--border-w) solid var(--border); padding-bottom: 24px; }
   .nav a {
@@ -31,8 +30,8 @@
     border: var(--border-w) solid var(--border); border-radius: 8px; font-size: 1rem; font-weight: 900;
     background: var(--bg); box-shadow: var(--shadow-sm); transition: all 0.1s;
   }
-  .nav a:hover { background: var(--accent-blue); transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #000; }
-  .nav a.active { background: var(--accent-purple); box-shadow: 2px 2px 0px #000; transform: translate(2px, 2px); }
+  .nav a:hover { background: var(--bg); transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #000; }
+  .nav a.active { background: var(--bg); box-shadow: 2px 2px 0px #000; transform: translate(2px, 2px); }
 
   .tabs { display:flex; gap:8px; margin-bottom: 20px; flex-wrap:wrap; }
   .tab {
@@ -40,8 +39,8 @@
     font-size:0.85rem; cursor:pointer; font-weight:800; background:var(--bg);
     box-shadow: var(--shadow-sm); transition:all .1s;
   }
-  .tab:hover { background:var(--accent-blue); transform:translate(-2px,-2px); box-shadow:6px 6px 0px #000; }
-  .tab.on { background:var(--accent-green); box-shadow:2px 2px 0px #000; transform:translate(2px,2px); }
+  .tab:hover { background:var(--red-light); transform:translate(-2px,-2px); box-shadow:6px 6px 0px #000; }
+  .tab.on { background:var(--red); color:#fff; box-shadow:2px 2px 0px #000; transform:translate(2px,2px); }
   .tab .count { font-size:0.7rem; margin-left:4px; opacity:0.6; }
 
   .file-card {
@@ -57,19 +56,19 @@
     font-size:1.5rem; background:var(--bg); overflow:hidden;
   }
   .file-card .thumb img { width:100%; height:100%; object-fit:cover; }
-  .thumb.docx { background:var(--accent-blue); }
-  .thumb.pdf { background:var(--accent-red); color:#fff; }
-  .thumb.img { background:var(--accent-purple); }
+  .thumb.docx { background:var(--red-light); }
+  .thumb.pdf { background:var(--red); color:#fff; }
+  .thumb.img { background:var(--red-light); }
   .file-card .info { flex:1; min-width:0; }
   .file-card .name { font-weight:900; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
   .file-card .meta { font-size:0.8rem; font-weight:700; display:flex; gap:14px; flex-wrap:wrap; }
-  .file-card .img-count { background:var(--accent-green); border:2px solid #000; padding:4px 10px; border-radius:4px; font-weight:900; font-size:0.8rem; flex-shrink:0; align-self:center; box-shadow:2px 2px 0px #000; }
+  .file-card .img-count { background:var(--red); color:#fff; border:2px solid #000; padding:4px 10px; border-radius:4px; font-weight:900; font-size:0.8rem; flex-shrink:0; align-self:center; box-shadow:2px 2px 0px #000; }
   .file-card .dl-btn { flex-shrink:0; align-self:center; }
-  .file-card .dl-btn a { background:var(--accent-yellow); color:#000; text-decoration:none; border:2px solid #000; padding:6px 14px; font-weight:900; font-size:0.85rem; border-radius:6px; box-shadow:2px 2px 0px #000; transition:all .1s; }
+  .file-card .dl-btn a { background:var(--red-light); color:#000; text-decoration:none; border:2px solid #000; padding:6px 14px; font-weight:900; font-size:0.85rem; border-radius:6px; box-shadow:2px 2px 0px #000; transition:all .1s; }
   .file-card .dl-btn a:hover { transform:translate(-2px,-2px); box-shadow:4px 4px 0px #000; }
 
   .empty { text-align:center; padding:60px 0; font-weight:900; font-size:1.1rem; }
-  .spinner { display:none; margin:40px auto; width:36px; height:36px; border:4px solid var(--border); border-top-color:var(--accent-red); border-radius:50%; animation:spin .6s linear infinite; }
+  .spinner { display:none; margin:40px auto; width:36px; height:36px; border:4px solid var(--border); border-top-color:var(--red); border-radius:50%; animation:spin .6s linear infinite; }
   @keyframes spin { to{transform:rotate(360deg);} }
 </style>
 </head>
