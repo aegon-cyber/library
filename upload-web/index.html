@@ -3,340 +3,231 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📤 文件上传 — Library Agent</title>
+<title>LIBRARY AGENT — Upload</title>
 <style>
   :root {
-    --bg: #0f0f0f; --card: #1a1a1a; --border: #2a2a2a;
-    --text: #e0e0e0; --muted: #888; --accent: #3ecf8e;
-    --accent-dim: #2a5f3f; --danger: #f44; --danger-dim: #3a1a1a;
-    --warn: #f0c040;
+    --bg: #F4F0E6; --card: #FFFFFF; --border: #000000; --text: #000000;
+    --accent-red: #FF5252; --accent-yellow: #FFE600; --accent-green: #00E676;
+    --accent-blue: #A6FAFF; --accent-purple: #C4A1FF;
+    --border-w: 3px; --shadow: 8px 8px 0px #000; --shadow-sm: 4px 4px 0px #000;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg); color: var(--text);
     display: flex; justify-content: center;
     min-height: 100vh; padding: 40px 20px;
+    background-image: radial-gradient(#000 1px, transparent 1px);
+    background-size: 20px 20px;
   }
-  .container { width: 100%; max-width: 640px; }
-  h1 { font-size: 1.4rem; margin-bottom: 6px; }
-  .subtitle { color: var(--muted); margin-bottom: 28px; font-size: 0.88rem; }
-  .nav { display:flex; gap:10px; margin-bottom: 24px; }
-  .nav a {
-    color: var(--muted); text-decoration:none; padding:5px 10px;
-    border:1px solid var(--border); border-radius:6px; font-size:0.8rem;
-  }
-  .nav a.active { color: var(--accent); border-color: var(--accent-dim); background: #1a2a22; }
+  .page-wrapper { width: 100%; max-width: 760px; }
 
-  /* ── Dropzone ── */
+  .global-header { margin-bottom: 24px; padding-left: 8px; }
+  .global-header h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; letter-spacing: -0.5px; text-shadow: 3px 3px 0px var(--accent-blue); }
+  .global-header .subtitle { font-weight: 800; font-size: 1rem; background: #000; color: var(--accent-yellow); display: inline-block; padding: 4px 12px; border-radius: 4px; box-shadow: 2px 2px 0px var(--accent-red); }
+
+  .container { background: var(--card); border: var(--border-w) solid var(--border); border-radius: 12px; padding: 40px; box-shadow: var(--shadow); }
+  .nav { display:flex; gap:16px; margin-bottom: 32px; border-bottom: var(--border-w) solid var(--border); padding-bottom: 24px; }
+  .nav a {
+    color: var(--text); text-decoration:none; padding: 12px 32px;
+    border: var(--border-w) solid var(--border); border-radius: 8px; font-size: 1rem; font-weight: 900;
+    background: var(--bg); box-shadow: var(--shadow-sm); transition: all 0.1s;
+  }
+  .nav a:hover { background: var(--accent-blue); transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #000; }
+  .nav a.active { background: var(--accent-purple); box-shadow: 2px 2px 0px #000; transform: translate(2px, 2px); }
+
   .dropzone {
-    border: 2px dashed var(--border); border-radius: 10px;
-    padding: 28px; text-align: center; cursor: pointer;
-    transition: border-color .2s, background .2s; margin-bottom: 16px;
+    border: 4px dashed var(--border); border-radius: 12px;
+    padding: 80px 20px; text-align: center; cursor: pointer;
+    background: var(--card); box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease-out; margin-bottom: 24px;
   }
   .dropzone:hover, .dropzone.drag-over {
-    border-color: var(--accent); background: #1a2a22;
+    background: var(--accent-yellow); border-style: solid;
+    transform: translate(-4px, -4px); box-shadow: 8px 8px 0px #000;
   }
-  .dropzone .icon { font-size: 1.8rem; margin-bottom: 8px; }
-  .dropzone p { color: var(--muted); font-size: 0.85rem; }
-  .dropzone .hint { font-size: 0.78rem; color: #555; margin-top: 6px; }
+  .dropzone .icon { font-size: 3.5rem; margin-bottom: 16px; }
+  .dropzone h3 { font-size: 1.5rem; font-weight: 900; margin-bottom: 12px; }
+  .dropzone p { font-weight: 700; font-size: 0.95rem; }
   #fileInput { display: none; }
 
-  /* ── File Queue ── */
-  .queue { margin-bottom: 16px; }
-  .queue:empty { margin-bottom: 0; }
+  .queue-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; font-size: 1.1rem; font-weight: 900; display: none; }
+  .queue-header.show { display: flex; }
+  .clear-btn { background: var(--card); border: 2px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 6px; font-size: 0.85rem; font-weight: 800; cursor: pointer; box-shadow: 2px 2px 0px #000; transition: all 0.1s; }
+  .clear-btn:hover { background: var(--accent-red); color: #fff; }
+  .clear-btn:active { transform: translate(2px,2px); box-shadow: 0px 0px 0px #000; }
 
+  .queue { margin-bottom: 24px; }
   .file-item {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 14px; background: var(--card);
-    border: 1px solid var(--border); border-radius: 8px;
-    margin-bottom: 6px; transition: border-color .15s;
+    display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--card);
+    border: var(--border-w) solid var(--border); border-radius: 8px;
+    margin-bottom: 12px; box-shadow: var(--shadow-sm); animation: slideIn 0.2s ease forwards;
   }
-  .file-item:hover { border-color: #444; }
-  .file-item .type-icon {
-    width: 32px; height: 32px; border-radius: 6px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 1rem; flex-shrink: 0;
-  }
-  .type-icon.img { background: #1a2a22; }
-  .type-icon.pdf { background: #2a1a1a; }
-  .type-icon.docx { background: #1a2a3a; }
+  .file-item:hover { background: #fcfcfc; transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #000; }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+  .type-icon { width: 48px; height: 48px; border-radius: 6px; border: 2px solid var(--border); display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.75rem; }
+  .type-icon.img { background: var(--accent-purple); }
+  .type-icon.pdf { background: var(--accent-red); color: #fff; }
+  .type-icon.docx { background: var(--accent-blue); }
   .file-item .info { flex: 1; min-width: 0; }
-  .file-item .name { font-size: 0.88rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-  .file-item .meta { font-size: 0.75rem; color: var(--muted); margin-top: 2px; }
-  .file-item .remove {
-    width: 28px; height: 28px; border-radius: 6px; border: 1px solid transparent;
-    background: none; color: var(--muted); cursor: pointer; font-size: 1.1rem;
-    display: flex; align-items: center; justify-content: center;
-    transition: all .15s; flex-shrink: 0;
-  }
-  .file-item .remove:hover { background: var(--danger-dim); border-color: #5a2a2a; color: var(--danger); }
+  .file-item .name { font-size: 1.05rem; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-item .meta { font-size: 0.85rem; font-weight: 700; margin-top: 4px; }
+  .file-item .remove { background: var(--card); border: 2px solid var(--border); color: var(--text); cursor: pointer; width: 36px; height: 36px; border-radius: 6px; font-size: 1.4rem; font-weight: 900; line-height: 1; box-shadow: 2px 2px 0px #000; transition: all 0.1s; }
+  .file-item .remove:hover { background: var(--accent-red); color: #fff; }
+  .file-item .remove:active { transform: translate(2px,2px); box-shadow: 0px 0px 0px #000; }
 
-  /* status badges */
-  .file-item .status {
-    font-size: 0.72rem; padding: 3px 8px; border-radius: 12px; flex-shrink: 0;
-  }
-  .status.waiting { background: #2a2a2a; color: #999; }
-  .status.processing { background: #3a351a; color: var(--warn); }
-  .status.done { background: #1a2a22; color: var(--accent); }
-  .status.failed { background: var(--danger-dim); color: var(--danger); }
+  .status { font-size: 0.8rem; padding: 4px 12px; border-radius: 4px; font-weight: 900; border: 2px solid var(--border); }
+  .status.waiting { background: #eee; }
+  .status.processing { background: var(--accent-yellow); box-shadow: 2px 2px 0px #000; }
+  .status.done { background: var(--accent-green); box-shadow: 2px 2px 0px #000; }
+  .status.failed { background: var(--accent-red); color: #fff; box-shadow: 2px 2px 0px #000; }
 
-  /* ── Form ── */
-  .form-row {
-    display: flex; gap: 12px; margin-bottom: 14px;
-  }
-  .form-group { flex: 1; margin-bottom: 0; }
-  .form-group label {
-    display: block; font-size:0.82rem; color: var(--muted); margin-bottom: 5px;
-  }
-  .form-group input {
-    width: 100%; padding: 9px 12px; background: var(--card);
-    border: 1px solid var(--border); border-radius: 7px;
-    color: var(--text); font-size: 0.88rem; outline:none;
-  }
-  .form-group input:focus { border-color: var(--accent); }
+  .form-group { margin-bottom: 24px; }
+  .form-group label { display: block; font-size: 0.95rem; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; }
+  .form-group input { width: 100%; padding: 16px 20px; background: var(--card); border: var(--border-w) solid var(--border); border-radius: 8px; font-size: 1.05rem; font-weight: 800; outline: none; box-shadow: var(--shadow-sm); transition: all 0.1s; }
+  .form-group input:focus { background: var(--accent-blue); transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
 
   button.primary {
-    width: 100%; padding: 11px; background: var(--accent); color: #000;
-    border: none; border-radius: 8px; font-size: 0.95rem; font-weight: 600;
-    cursor: pointer; transition: opacity .2s;
+    width: 100%; padding: 20px; background: var(--accent-red); color: #fff;
+    border: var(--border-w) solid var(--border); border-radius: 8px; font-size: 1.2rem;
+    font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+    box-shadow: var(--shadow); transition: all 0.1s;
   }
-  button.primary:disabled { opacity: 0.4; cursor: not-allowed; }
+  button.primary:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 10px 10px 0px #000; }
+  button.primary:active:not(:disabled) { transform: translate(6px, 6px); box-shadow: 2px 2px 0px #000; background: #e03e3e; }
+  button.primary:disabled { background: #ccc; color: #666; cursor: not-allowed; transform: translate(4px,4px); box-shadow: 4px 4px 0px #000; }
 
-  .clear-btn {
-    background: none; border: 1px solid var(--border); color: var(--muted);
-    padding: 5px 12px; border-radius: 6px; font-size: 0.78rem;
-    cursor: pointer; transition: all .15s; margin-left: auto; display: none;
-  }
-  .clear-btn:hover { border-color: #555; color: var(--text); }
-  .clear-btn.show { display: inline-block; }
-
-  .queue-header {
-    display: flex; align-items: center; margin-bottom: 8px;
-    font-size: 0.8rem; color: var(--muted);
-  }
-  .queue-header { display: none; }
-  .queue-header.show { display: flex; }
-
-  /* ── Results ── */
-  .results { margin-top: 24px; }
-  .result-item {
-    padding: 10px 14px; background: var(--card); border: 1px solid var(--border);
-    border-radius: 8px; margin-bottom: 6px; font-size: 0.84rem;
-  }
-  .result-item.ok { border-left: 3px solid var(--accent); }
-  .result-item.err { border-left: 3px solid var(--danger); }
-  .spinner {
-    display:none; width:16px; height:16px; border:2px solid var(--border);
-    border-top-color: var(--accent); border-radius:50%;
-    animation: spin .6s linear infinite; margin-right:8px;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
+  .results { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .result-item { padding: 16px; border: var(--border-w) solid var(--border); border-radius: 8px; font-size: 0.95rem; font-weight: 800; box-shadow: var(--shadow-sm); background: var(--card); animation: slideIn 0.2s ease forwards; }
+  .result-item.ok { background: var(--accent-green); }
+  .result-item.err { background: var(--accent-red); color: #fff; }
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>📤 文件上传</h1>
-  <p class="subtitle">支持图片、PDF、DOCX — 多文件拖放，批量处理</p>
-
-  <div class="nav">
-    <a href="/upload-web/" class="active">📤 上传</a>
-    <a href="/query-web/">🔍 搜索</a>
-    <a href="/library-web/">📚 文件库</a>
+<div class="page-wrapper">
+  <div class="global-header">
+    <h1>LIBRARY AGENT</h1>
+    <span class="subtitle">AI FILE PROCESSING TERMINAL</span>
   </div>
-
-  <div class="dropzone" id="dropzone">
-    <div class="icon">📁</div>
-    <p>拖拽文件到此处 或 点击选择</p>
-    <p class="hint">支持 JPG / PNG / GIF / WebP / PDF / DOCX（可多选）</p>
-  </div>
-  <input type="file" id="fileInput" accept="image/*,.pdf,.docx" multiple>
-
-  <div class="queue-header show" id="queueHeader">
-    <span id="queueCount"></span>
-    <button class="clear-btn" id="clearAllBtn">清空全部</button>
-  </div>
-  <div class="queue" id="queue"></div>
-
-  <div class="form-row">
-    <div class="form-group">
-      <label>上传人</label>
-      <input type="text" id="uploader" placeholder="输入名称" value="test_user">
+  <div class="container">
+    <div class="nav">
+      <a href="/upload-web/" class="active">UPLOAD</a>
+      <a href="/query-web/">SEARCH</a>
+      <a href="/library-web/">LIBRARY</a>
     </div>
+
+    <div class="dropzone" id="dropzone">
+      <div class="icon">📁</div>
+      <h3>DRAG & DROP FILES HERE</h3>
+      <p>JPG / PNG / PDF / DOCX (MULTI-SELECT)</p>
+    </div>
+    <input type="file" id="fileInput" accept="image/*,.pdf,.docx" multiple>
+
+    <div class="queue-header" id="queueHeader">
+      <span id="queueCount">QUEUE</span>
+      <button class="clear-btn" id="clearAllBtn">CLEAR ALL</button>
+    </div>
+    <div class="queue" id="queue"></div>
+
+    <div class="form-group">
+      <label>UPLOADER ID</label>
+      <input type="text" id="uploader" placeholder="Enter operator ID..." value="test_user">
+    </div>
+
+    <button class="primary" id="uploadBtn" disabled>UPLOAD EVERYTHING</button>
+    <div class="results" id="uploadResults"></div>
   </div>
-
-  <button class="primary" id="uploadBtn" disabled>上传全部文件</button>
-
-  <div class="results" id="results"></div>
 </div>
 
 <script>
 const API = '';
-
-const dropzone  = document.getElementById('dropzone');
+const dropzone = document.getElementById('dropzone');
 const fileInput = document.getElementById('fileInput');
-const queue     = document.getElementById('queue');
+const queue = document.getElementById('queue');
 const queueHeader = document.getElementById('queueHeader');
-const queueCount  = document.getElementById('queueCount');
+const queueCount = document.getElementById('queueCount');
 const clearAllBtn = document.getElementById('clearAllBtn');
 const uploadBtn = document.getElementById('uploadBtn');
-const results   = document.getElementById('results');
+const uploadResults = document.getElementById('uploadResults');
 
-let fileQueue = [];  // { id, file, status }
+let fileQueue = [];
 let isProcessing = false;
 
-// Warn before leaving during upload
 window.addEventListener('beforeunload', e => {
-  if (isProcessing) {
-    e.preventDefault();
-    e.returnValue = 'Upload in progress, leaving will cancel it.';
-  }
+  if (isProcessing) { e.preventDefault(); e.returnValue = 'Upload in progress!'; }
 });
 
-// ── Drag & drop ──
 dropzone.addEventListener('click', () => fileInput.click());
 dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
 dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropzone.classList.remove('drag-over');
-  addFiles(Array.from(e.dataTransfer.files));
-});
-fileInput.addEventListener('change', () => {
-  addFiles(Array.from(fileInput.files));
-  fileInput.value = '';
-});
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); addFiles(Array.from(e.dataTransfer.files)); });
+fileInput.addEventListener('change', () => { addFiles(Array.from(fileInput.files)); fileInput.value = ''; });
 
 function addFiles(files) {
-  files.forEach(f => {
-    if (!isValid(f)) return;
-    fileQueue.push({ id: Date.now() + Math.random(), file: f, status: 'waiting' });
-  });
+  files.forEach(f => { if (isValid(f)) fileQueue.push({ id: Date.now() + Math.random(), file: f, status: 'waiting' }); });
   renderQueue();
 }
-
 function isValid(f) {
-  const name = f.name.toLowerCase();
-  const ext = name.split('.').pop();
-  return ['jpg','jpeg','png','gif','webp','bmp','pdf','docx'].includes(ext);
+  const n = f.name.toLowerCase();
+  return ['jpg','jpeg','png','gif','webp','bmp','pdf','docx'].includes(n.split('.').pop());
 }
-
-// ── Render queue ──
 function renderQueue() {
   queue.innerHTML = fileQueue.map(item => {
     const f = item.file;
-    const icon = typeIcon(f.name);
     const cls = typeClass(f.name);
-    const size = f.size > 1024*1024
-      ? (f.size/(1024*1024)).toFixed(1) + ' MB'
-      : Math.round(f.size/1024) + ' KB';
-    let statusHtml = '';
-    if (item.status === 'processing') statusHtml = '<span class="status processing">⏳ 处理中</span>';
-    else if (item.status === 'done') statusHtml = '<span class="status done">✓ 完成</span>';
-    else if (item.status === 'failed') statusHtml = `<span class="status failed">✕ 失败</span>`;
-    return `
-      <div class="file-item" data-id="${item.id}">
-        <div class="type-icon ${cls}">${icon}</div>
-        <div class="info">
-          <div class="name">${f.name}</div>
-          <div class="meta">${size}${item.error ? ' · ' + item.error : ''}</div>
-        </div>
-        ${statusHtml}
-        ${item.status === 'waiting' ? `<button class="remove" data-id="${item.id}" title="移除">×</button>` : ''}
-      </div>`;
+    const size = f.size > 1024*1024 ? (f.size/(1024*1024)).toFixed(1) + ' MB' : Math.round(f.size/1024) + ' KB';
+    let s = '';
+    if (item.status === 'processing') s = '<span class="status processing">PROCESSING...</span>';
+    else if (item.status === 'done') s = '<span class="status done">DONE</span>';
+    else if (item.status === 'failed') s = '<span class="status failed">FAILED</span>';
+    else s = '<span class="status waiting">QUEUED</span>';
+    return `<div class="file-item"><div class="type-icon ${cls}">${typeText(f.name)}</div><div class="info"><div class="name">${f.name}</div><div class="meta">${size}${item.error ? ' ⚠ '+item.error : ''}</div></div>${s}${item.status==='waiting'?`<button class="remove" data-id="${item.id}">×</button>`:''}</div>`;
   }).join('');
-
-  // bind remove buttons
-  queue.querySelectorAll('.remove').forEach(btn => {
-    btn.addEventListener('click', () => {
-      removeFile(Number(btn.dataset.id));
-    });
-  });
-
+  queue.querySelectorAll('.remove').forEach(b => b.addEventListener('click', () => { fileQueue = fileQueue.filter(x => x.id !== Number(b.dataset.id)); renderQueue(); }));
   updateUI();
 }
-
-function removeFile(id) {
-  fileQueue = fileQueue.filter(f => f.id !== id);
-  renderQueue();
-}
-
 function updateUI() {
-  const count = fileQueue.length;
-  queueCount.textContent = count ? `${count} 个文件` : '';
-  clearAllBtn.classList.toggle('show', count > 0);
-  queueHeader.classList.toggle('show', count > 0);
-  uploadBtn.disabled = count === 0 || fileQueue.some(f => f.status === 'processing');
-  uploadBtn.textContent = count ? `上传 ${count} 个文件` : '上传全部文件';
+  const c = fileQueue.length;
+  queueCount.textContent = c ? `QUEUE [ ${c} ] FILES` : 'QUEUE';
+  queueHeader.classList.toggle('show', c > 0);
+  uploadBtn.disabled = c === 0 || fileQueue.some(f => f.status === 'processing');
+  uploadBtn.textContent = c ? `UPLOAD [ ${c} ] FILES` : 'UPLOAD EVERYTHING';
 }
+clearAllBtn.addEventListener('click', () => { fileQueue = fileQueue.filter(f => f.status !== 'waiting'); renderQueue(); });
 
-clearAllBtn.addEventListener('click', () => {
-  fileQueue = fileQueue.filter(f => f.status !== 'waiting');
-  renderQueue();
-});
+function typeText(n) { const e = n.split('.').pop().toLowerCase(); if (['png','jpg','jpeg','gif','webp','bmp'].includes(e)) return 'IMG'; if (e === 'pdf') return 'PDF'; if (e === 'docx') return 'DOCX'; return 'FILE'; }
+function typeClass(n) { const e = n.split('.').pop().toLowerCase(); if (['png','jpg','jpeg','gif','webp','bmp'].includes(e)) return 'img'; if (e === 'pdf') return 'pdf'; if (e === 'docx') return 'docx'; return ''; }
 
-// ── Type helpers ──
-function typeIcon(name) {
-  const ext = name.split('.').pop().toLowerCase();
-  if (['png','jpg','jpeg','gif','webp','bmp'].includes(ext)) return '🖼';
-  if (ext === 'pdf') return '📕';
-  if (ext === 'docx') return '📄';
-  return '📎';
-}
-function typeClass(name) {
-  const ext = name.split('.').pop().toLowerCase();
-  if (['png','jpg','jpeg','gif','webp','bmp'].includes(ext)) return 'img';
-  if (ext === 'pdf') return 'pdf';
-  if (ext === 'docx') return 'docx';
-  return '';
-}
-
-// ── Upload ──
 uploadBtn.addEventListener('click', async () => {
   const pending = fileQueue.filter(f => f.status === 'waiting');
   if (!pending.length) return;
-
-  uploadBtn.disabled = true;
-  isProcessing = true;
+  uploadBtn.disabled = true; isProcessing = true;
   const uploader = document.getElementById('uploader').value || 'test_user';
-  results.innerHTML = '';
-
+  uploadResults.innerHTML = '';
   for (const item of pending) {
-    item.status = 'processing';
-    renderQueue();
-
-    const formData = new FormData();
-    formData.append('file', item.file);
-    formData.append('uploader', uploader);
-
+    item.status = 'processing'; renderQueue();
+    const fd = new FormData();
+    fd.append('file', item.file); fd.append('uploader', uploader);
     try {
-      const resp = await fetch(`${API}/api/process`, { method: 'POST', body: formData });
+      const resp = await fetch(`${API}/api/process`, { method: 'POST', body: fd });
       const data = await resp.json();
-
       if (resp.ok) {
         item.status = 'done';
-        let summary = '';
-        if (data.type === 'accepted') summary = '已接收，后台处理中…';
-        else if (data.type === 'pdf') summary = `PDF · ${data.page_count}页 · ${data.indexed_count}图`;
-        else if (data.type === 'docx') summary = `DOCX · ${data.image_count}图`;
-        else summary = `图片 · ${data.embedding_dim}维`;
-        results.innerHTML += `<div class="result-item ok">✓ ${data.file_name || data.name} — ${summary}</div>`;
+        let sum = data.type === 'accepted' ? 'ACCEPTED - processing in background' : data.type === 'docx' ? `DOCX · ${data.image_count} images` : `IMAGE · ${data.embedding_dim}d`;
+        uploadResults.innerHTML += `<div class="result-item ok">✓ ${data.file_name || data.name || item.file.name} — ${sum}</div>`;
       } else {
-        item.status = 'failed';
-        item.error = data.error || '未知错误';
-        results.innerHTML += `<div class="result-item err">✕ ${item.file.name} — ${data.error || '失败'}</div>`;
+        item.status = 'failed'; item.error = data.error || 'Error';
+        uploadResults.innerHTML += `<div class="result-item err">✕ ${item.file.name} — ${data.error || 'Failed'}</div>`;
       }
     } catch (e) {
-      item.status = 'failed';
-      item.error = e.message;
-      results.innerHTML += `<div class="result-item err">✕ ${item.file.name} — ${e.message}</div>`;
+      item.status = 'failed'; item.error = e.message;
+      uploadResults.innerHTML += `<div class="result-item err">✕ ${item.file.name} — Network error</div>`;
     }
     renderQueue();
-    results.scrollIntoView({ behavior: 'smooth', block: 'end' });
+    uploadResults.scrollIntoView({ behavior: 'smooth', block: 'end' });
   }
-
-  isProcessing = false;
-  updateUI();
+  isProcessing = false; updateUI();
 });
 </script>
 </body>

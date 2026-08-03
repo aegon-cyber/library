@@ -3,130 +3,119 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>📚 文件库 — Library Agent</title>
+<title>LIBRARY AGENT — Library</title>
 <style>
   :root {
-    --bg: #0f0f0f; --card: #1a1a1a; --border: #2a2a2a;
-    --text: #e0e0e0; --muted: #888; --accent: #3ecf8e;
-    --accent-dim: #2a5f3f;
+    --bg: #F4F0E6; --card: #FFFFFF; --border: #000000; --text: #000000;
+    --accent-red: #FF5252; --accent-yellow: #FFE600; --accent-green: #00E676;
+    --accent-blue: #A6FAFF; --accent-purple: #C4A1FF;
+    --border-w: 3px; --shadow: 8px 8px 0px #000; --shadow-sm: 4px 4px 0px #000;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background: var(--bg); color: var(--text);
     display: flex; justify-content: center;
     min-height: 100vh; padding: 40px 20px;
+    background-image: radial-gradient(#000 1px, transparent 1px);
+    background-size: 20px 20px;
   }
-  .container { width: 100%; max-width: 800px; }
-  h1 { font-size: 1.4rem; margin-bottom: 6px; }
-  .subtitle { color: var(--muted); margin-bottom: 24px; font-size: 0.88rem; }
-  .nav { display:flex; gap:10px; margin-bottom: 24px; }
+  .page-wrapper { width: 100%; max-width: 800px; }
+  .global-header { margin-bottom: 24px; padding-left: 8px; }
+  .global-header h1 { font-size: 2.2rem; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; letter-spacing: -0.5px; text-shadow: 3px 3px 0px var(--accent-green); }
+  .global-header .subtitle { font-weight: 800; font-size: 1rem; background: #000; color: var(--accent-yellow); display: inline-block; padding: 4px 12px; border-radius: 4px; box-shadow: 2px 2px 0px var(--accent-red); }
+  .container { background: var(--card); border: var(--border-w) solid var(--border); border-radius: 12px; padding: 40px; box-shadow: var(--shadow); }
+  .nav { display:flex; gap:16px; margin-bottom: 32px; border-bottom: var(--border-w) solid var(--border); padding-bottom: 24px; }
   .nav a {
-    color: var(--muted); text-decoration:none; padding:5px 10px;
-    border:1px solid var(--border); border-radius:6px; font-size:0.8rem;
+    color: var(--text); text-decoration:none; padding: 12px 32px;
+    border: var(--border-w) solid var(--border); border-radius: 8px; font-size: 1rem; font-weight: 900;
+    background: var(--bg); box-shadow: var(--shadow-sm); transition: all 0.1s;
   }
-  .nav a.active { color: var(--accent); border-color: var(--accent-dim); background: #1a2a22; }
+  .nav a:hover { background: var(--accent-blue); transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #000; }
+  .nav a.active { background: var(--accent-purple); box-shadow: 2px 2px 0px #000; transform: translate(2px, 2px); }
 
   .tabs { display:flex; gap:8px; margin-bottom: 20px; flex-wrap:wrap; }
   .tab {
-    padding:7px 16px; border:1px solid var(--border); border-radius:6px;
-    font-size:0.82rem; cursor:pointer; color:var(--muted); background:none;
-    transition: all .15s;
+    padding:10px 20px; border:var(--border-w) solid var(--border); border-radius:6px;
+    font-size:0.85rem; cursor:pointer; font-weight:800; background:var(--bg);
+    box-shadow: var(--shadow-sm); transition:all .1s;
   }
-  .tab:hover { border-color:#555; }
-  .tab.on { color:var(--accent); border-color:var(--accent-dim); background:#1a2a22; }
-  .tab .count { color:var(--muted); font-size:0.7rem; margin-left:4px; }
+  .tab:hover { background:var(--accent-blue); transform:translate(-2px,-2px); box-shadow:6px 6px 0px #000; }
+  .tab.on { background:var(--accent-green); box-shadow:2px 2px 0px #000; transform:translate(2px,2px); }
+  .tab .count { font-size:0.7rem; margin-left:4px; opacity:0.6; }
 
   .file-card {
-    display: flex; gap: 14px; background:var(--card);
-    border:1px solid var(--border); border-radius:10px;
-    padding:14px 16px; margin-bottom:8px; transition:border-color .15s;
+    display: flex; gap: 16px; background: var(--card);
+    border: var(--border-w) solid var(--border); border-radius: 8px;
+    padding: 16px 20px; margin-bottom: 12px; box-shadow: var(--shadow-sm);
+    transition: all 0.15s;
   }
-  .file-card:hover { border-color:#444; }
-  .file-card .icon {
-    width:44px; height:44px; border-radius:8px;
-    display:flex; align-items:center; justify-content:center;
-    font-size:1.2rem; flex-shrink:0;
+  .file-card:hover { transform: translate(-4px, -4px); box-shadow: 8px 8px 0px #000; }
+  .file-card .thumb {
+    width:56px; height:56px; border-radius:6px; border:2px solid var(--border);
+    flex-shrink:0; display:flex; align-items:center; justify-content:center;
+    font-size:1.5rem; background:var(--bg); overflow:hidden;
   }
-  .icon.docx { background:#1a2a3a; }
-  .icon.pdf  { background:#2a1a1a; }
-  .icon.img  { background:#1a2a22; }
+  .file-card .thumb img { width:100%; height:100%; object-fit:cover; }
+  .thumb.docx { background:var(--accent-blue); }
+  .thumb.pdf { background:var(--accent-red); color:#fff; }
+  .thumb.img { background:var(--accent-purple); }
   .file-card .info { flex:1; min-width:0; }
-  .file-card .name {
-    font-weight:500; font-size:0.9rem; white-space:nowrap;
-    overflow:hidden; text-overflow:ellipsis; margin-bottom:3px;
-  }
-  .file-card .meta {
-    font-size:0.76rem; color:var(--muted);
-    display:flex; gap:14px; flex-wrap:wrap;
-  }
-  .file-card .images-count {
-    background:var(--bg); padding:2px 8px; border-radius:4px;
-    font-size:0.72rem; color:var(--accent); flex-shrink:0;
-    align-self:center;
-  }
+  .file-card .name { font-weight:900; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
+  .file-card .meta { font-size:0.8rem; font-weight:700; display:flex; gap:14px; flex-wrap:wrap; }
+  .file-card .img-count { background:var(--accent-green); border:2px solid #000; padding:4px 10px; border-radius:4px; font-weight:900; font-size:0.8rem; flex-shrink:0; align-self:center; box-shadow:2px 2px 0px #000; }
+  .file-card .dl-btn { flex-shrink:0; align-self:center; }
+  .file-card .dl-btn a { background:var(--accent-yellow); color:#000; text-decoration:none; border:2px solid #000; padding:6px 14px; font-weight:900; font-size:0.85rem; border-radius:6px; box-shadow:2px 2px 0px #000; transition:all .1s; }
+  .file-card .dl-btn a:hover { transform:translate(-2px,-2px); box-shadow:4px 4px 0px #000; }
 
-  .empty { text-align:center; padding:60px 0; color:var(--muted); }
-  .spinner { display:none; margin:40px auto; width:24px; height:24px;
-             border:2px solid var(--border); border-top-color:var(--accent);
-             border-radius:50%; animation:spin .6s linear infinite; }
+  .empty { text-align:center; padding:60px 0; font-weight:900; font-size:1.1rem; }
+  .spinner { display:none; margin:40px auto; width:36px; height:36px; border:4px solid var(--border); border-top-color:var(--accent-red); border-radius:50%; animation:spin .6s linear infinite; }
   @keyframes spin { to{transform:rotate(360deg);} }
 </style>
 </head>
 <body>
-<div class="container">
-  <h1>📚 文件库</h1>
-  <p class="subtitle">按来源文档浏览已索引的文件</p>
-
-  <div class="nav">
-    <a href="/upload-web/">📤 上传</a>
-    <a href="/query-web/">🔍 搜索</a>
-    <a href="/library-web/" class="active">📚 文件库</a>
+<div class="page-wrapper">
+  <div class="global-header">
+    <h1>LIBRARY AGENT</h1>
+    <span class="subtitle">INDEXED FILE BROWSER</span>
   </div>
+  <div class="container">
+    <div class="nav">
+      <a href="/upload-web/">UPLOAD</a>
+      <a href="/query-web/">SEARCH</a>
+      <a href="/library-web/" class="active">LIBRARY</a>
+    </div>
 
-  <div class="tabs" id="tabs">
-    <button class="tab on" data-type="docx">📄 DOCX<span class="count" id="cnt-docx"></span></button>
-    <button class="tab" data-type="pdf">📕 PDF<span class="count" id="cnt-pdf"></span></button>
-    <button class="tab" data-type="image">🖼 图片<span class="count" id="cnt-image"></span></button>
-    <button class="tab" data-type="all">全部<span class="count" id="cnt-all"></span></button>
-  </div>
+    <div class="tabs" id="tabs">
+      <button class="tab on" data-type="docx">📄 DOCX<span class="count" id="cnt-docx"></span></button>
+      <button class="tab" data-type="pdf">📕 PDF<span class="count" id="cnt-pdf"></span></button>
+      <button class="tab" data-type="image">🖼 IMAGE<span class="count" id="cnt-image"></span></button>
+      <button class="tab" data-type="all">ALL<span class="count" id="cnt-all"></span></button>
+    </div>
 
-  <div class="spinner" id="spinner"></div>
-  <div id="list"></div>
-  <div class="empty" id="empty">
-    <p>加载中…</p>
+    <div class="spinner" id="spinner"></div>
+    <div id="list"></div>
+    <div class="empty" id="empty"><p>LOADING...</p></div>
   </div>
 </div>
 
 <script>
 const API = '';
-
-let allGroups = [];  // { type, name, url, images[], uploader, upload_time }
+let allGroups = [];
 let currentType = 'docx';
 
-// Group images by source document
 function groupBySource(images) {
   const groups = {};
   images.forEach(img => {
     const src = (img.source_file || '').trim();
     let key, type;
-    if (!src || src === img.file_name) {
-      // Standalone image
-      key = img.file_name;
-      type = 'image';
-    } else {
-      key = src;
-      type = src.toLowerCase().endsWith('.pdf') ? 'pdf' : 'docx';
-    }
+    if (!src || src === img.file_name) { key = img.file_name; type = 'image'; }
+    else { key = src; type = src.toLowerCase().endsWith('.pdf') ? 'pdf' : 'docx'; }
     if (!groups[key]) groups[key] = { type, name: src || img.file_name, url: '', images: [], uploader: img.uploader, upload_time: img.upload_time, thumbnail: '' };
     groups[key].images.push(img);
     if (!groups[key].url && img.source_url) groups[key].url = img.source_url;
     if (!groups[key].thumbnail && img.thumbnail_path) groups[key].thumbnail = img.thumbnail_path;
-    // Keep earliest upload_time
-    if ((img.upload_time || '') < (groups[key].upload_time || '')) {
-      groups[key].upload_time = img.upload_time;
-      groups[key].uploader = img.uploader;
-    }
+    if ((img.upload_time||'') < (groups[key].upload_time||'')) { groups[key].upload_time = img.upload_time; groups[key].uploader = img.uploader; }
   });
   return Object.values(groups).sort((a,b) => (b.upload_time||'').localeCompare(a.upload_time||''));
 }
@@ -144,42 +133,27 @@ function renderList() {
   const filtered = currentType === 'all' ? allGroups : allGroups.filter(g => g.type === currentType);
   const list = document.getElementById('list');
   const empty = document.getElementById('empty');
+  if (!filtered.length) { empty.innerHTML = '<p>NO FILES IN THIS CATEGORY</p>'; empty.style.display='block'; list.innerHTML=''; return; }
+  empty.style.display='none';
 
-  if (!filtered.length) {
-    empty.innerHTML = '<p>暂无此类文件</p>';
-    empty.style.display = 'block';
-    list.innerHTML = '';
-    return;
-  }
-  empty.style.display = 'none';
-
+  const iconMap = { docx:'📄', pdf:'📕', image:'🖼' };
   list.innerHTML = filtered.map(g => {
-    const iconMap = { docx:'📄', pdf:'📕', image:'🖼' };
-    const time = (g.upload_time || '').slice(0,10);
+    const time = (g.upload_time||'').slice(0,10);
     const imgCount = g.images.length;
-    // Thumbnail: use first image's thumbnail or file_path
     const thumb = g.thumbnail || '';
     const dlUrl = g.url || (g.images[0]?.file_path || '');
-    const dl = dlUrl ? `<a href="${dlUrl}" download style="color:var(--accent);text-decoration:none;font-size:0.8rem;" title="下载文件">⬇</a>` : '';
-    return `
-    <div class="file-card">
-      <div class="icon ${g.type}">
-        ${thumb ? `<img src="${thumb}" style="width:44px;height:44px;border-radius:6px;object-fit:cover;">` : iconMap[g.type]}
-      </div>
+    return `<div class="file-card">
+      <div class="thumb ${g.type}">${thumb ? `<img src="${thumb}">` : iconMap[g.type]}</div>
       <div class="info">
         <div class="name">${g.name || '(unnamed)'}</div>
-        <div class="meta">
-          <span>${g.uploader || '-'}</span>
-          <span>${time || '-'}</span>
-        </div>
+        <div class="meta"><span>${g.uploader||'-'}</span><span>${time||'-'}</span></div>
       </div>
-      <div class="images-count">${imgCount} 张图</div>
-      ${dl ? `<div class="dl-btn">${dl}</div>` : ''}
+      <div class="img-count">${imgCount} IMG</div>
+      ${dlUrl ? `<div class="dl-btn"><a href="${dlUrl}" download>⬇ DOWNLOAD</a></div>` : ''}
     </div>`;
   }).join('');
 }
 
-// Tab switch
 document.getElementById('tabs').addEventListener('click', e => {
   const tab = e.target.closest('.tab');
   if (!tab) return;
@@ -188,7 +162,6 @@ document.getElementById('tabs').addEventListener('click', e => {
   renderList();
 });
 
-// Load
 (async () => {
   try {
     const resp = await fetch(`${API}/api/images`);
@@ -198,9 +171,7 @@ document.getElementById('tabs').addEventListener('click', e => {
       renderTabs();
       renderList();
     }
-  } catch(e) {
-    document.getElementById('empty').innerHTML = '<p>加载失败</p>';
-  }
+  } catch(e) { document.getElementById('empty').innerHTML = '<p>LOAD FAILED</p>'; }
 })();
 </script>
 </body>

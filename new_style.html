@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Library Agent — Neo-Brutalism</title>
+<style>
+  :root {
+    --bg: #F4F0E6;           /* 复古米黄底色 */
+    --card: #FFFFFF;         /* 纯白卡片 */
+    --border: #000000;       /* 纯黑粗边框 */
+    --text: #000000;
+    
+    /* 大胆的点缀色 */
+    --accent-red: #FF5252;
+    --accent-yellow: #FFE600;
+    --accent-green: #00E676;
+    --accent-blue: #A6FAFF;
+    --accent-purple: #C4A1FF;
+    
+    --border-w: 3px;         /* 粗边框宽度 */
+    --shadow: 8px 8px 0px #000;    /* 大硬阴影 */
+    --shadow-sm: 4px 4px 0px #000; /* 小硬阴影 */
+  }
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+  
+  body {
+    font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg); color: var(--text);
+    display: flex; justify-content: center;
+    min-height: 100vh; padding: 40px 20px;
+    /* 复古点阵背景 */
+    background-image: radial-gradient(#000 1px, transparent 1px);
+    background-size: 20px 20px;
+  }
+
+  .page-wrapper {
+    width: 100%; max-width: 760px; /* 整体加宽，让内部空间更大 */
+  }
+
+  /* ── 独立在外的全局标题 ── */
+  .global-header {
+    margin-bottom: 24px;
+    padding-left: 8px; /* 对齐下方卡片 */
+  }
+  .global-header h1 { 
+    font-size: 2.2rem; font-weight: 900; margin-bottom: 8px; 
+    text-transform: uppercase; letter-spacing: -0.5px;
+    text-shadow: 3px 3px 0px var(--accent-blue); /* 标题粗野风投影 */
+  }
+  .global-header .subtitle { 
+    font-weight: 800; font-size: 1rem; background: #000; color: var(--accent-yellow);
+    display: inline-block; padding: 4px 12px; border-radius: 4px;
+    box-shadow: 2px 2px 0px var(--accent-red);
+  }
+
+  /* ── 主体框架卡片 ── */
+  .container { 
+    background: var(--card);
+    border: var(--border-w) solid var(--border);
+    border-radius: 12px;
+    padding: 40px;
+    box-shadow: var(--shadow);
+  }
+
+  /* ── 导航 Tabs ── */
+  .nav { display:flex; gap:16px; margin-bottom: 32px; border-bottom: var(--border-w) solid var(--border); padding-bottom: 24px;}
+  .nav a {
+    color: var(--text); text-decoration:none; padding: 12px 32px;
+    border: var(--border-w) solid var(--border); border-radius: 8px; 
+    font-size: 1rem; font-weight: 900; background: var(--bg);
+    box-shadow: var(--shadow-sm); transition: all 0.1s; cursor: pointer;
+  }
+  .nav a:hover { background: var(--accent-blue); transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #000; }
+  .nav a.active { background: var(--accent-purple); box-shadow: 2px 2px 0px #000; transform: translate(2px, 2px); }
+
+  /* =========================================
+     页面 1: UPLOAD 样式
+     ========================================= */
+  
+  /* 放大的 Dropzone */
+  .dropzone {
+    border: 4px dashed var(--border); border-radius: 12px;
+    padding: 80px 20px; /* 大幅增加上下内边距 */
+    text-align: center; cursor: pointer;
+    background: var(--card); box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease-out; margin-bottom: 24px;
+  }
+  .dropzone:hover, .dropzone.drag-over {
+    background: var(--accent-yellow); border-style: solid;
+    transform: translate(-4px, -4px); box-shadow: 8px 8px 0px #000;
+  }
+  .dropzone .icon { font-size: 3.5rem; margin-bottom: 16px; }
+  .dropzone h3 { font-size: 1.5rem; font-weight: 900; margin-bottom: 12px; }
+  .dropzone p { font-weight: 700; font-size: 0.95rem; }
+  #fileInput { display: none; }
+
+  /* 队列与卡片 */
+  .queue-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 16px; font-size: 1.1rem; font-weight: 900; display: none; 
+  }
+  .queue-header.show { display: flex; }
+  .clear-btn {
+    background: var(--card); border: 2px solid var(--border); color: var(--text); padding: 6px 14px; border-radius: 6px; 
+    font-size: 0.85rem; font-weight: 800; cursor: pointer; box-shadow: 2px 2px 0px #000; transition: all 0.1s;
+  }
+  .clear-btn:hover { background: var(--accent-red); color: #fff; }
+  .clear-btn:active { transform: translate(2px,2px); box-shadow: 0px 0px 0px #000; }
+
+  .queue { margin-bottom: 24px; }
+  .file-item {
+    display: flex; align-items: center; gap: 16px; padding: 16px; background: var(--card);
+    border: var(--border-w) solid var(--border); border-radius: 8px;
+    margin-bottom: 12px; box-shadow: var(--shadow-sm); animation: slideIn 0.2s ease forwards;
+  }
+  .file-item:hover { background: #fcfcfc; transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #000; }
+  
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-10px); } to { opacity: 1; transform: translateX(0); } }
+
+  .type-icon {
+    width: 48px; height: 48px; border-radius: 6px; border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center; font-weight: 900; font-size: 0.75rem;
+  }
+  .type-icon.img { background: var(--accent-purple); }
+  .type-icon.pdf { background: var(--accent-red); color: #fff; }
+  .type-icon.docx { background: var(--accent-blue); }
+
+  .file-item .info { flex: 1; min-width: 0; }
+  .file-item .name { font-size: 1.05rem; font-weight: 900; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .file-item .meta { font-size: 0.85rem; font-weight: 700; margin-top: 4px; }
+  
+  .file-item .remove {
+    background: var(--card); border: 2px solid var(--border); color: var(--text); cursor: pointer; 
+    width: 36px; height: 36px; border-radius: 6px; font-size: 1.4rem; font-weight: 900; line-height: 1;
+    box-shadow: 2px 2px 0px #000; transition: all 0.1s;
+  }
+  .file-item .remove:hover { background: var(--accent-red); color: #fff; }
+  .file-item .remove:active { transform: translate(2px,2px); box-shadow: 0px 0px 0px #000; }
+
+  /* 状态标签 */
+  .status { font-size: 0.8rem; padding: 4px 12px; border-radius: 4px; font-weight: 900; border: 2px solid var(--border); }
+  .status.waiting { background: #eee; }
+  .status.processing { background: var(--accent-yellow); box-shadow: 2px 2px 0px #000; }
+  .status.done { background: var(--accent-green); box-shadow: 2px 2px 0px #000; }
+  .status.failed { background: var(--accent-red); color: #fff; box-shadow: 2px 2px 0px #000; }
+
+  /* 输入框 & 按钮 */
+  .form-group { margin-bottom: 24px; }
+  .form-group label { display: block; font-size: 0.95rem; font-weight: 900; margin-bottom: 8px; text-transform: uppercase; }
+  .form-group input {
+    width: 100%; padding: 16px 20px; background: var(--card);
+    border: var(--border-w) solid var(--border); border-radius: 8px;
+    font-size: 1.05rem; font-weight: 800; outline: none; box-shadow: var(--shadow-sm); transition: all 0.1s;
+  }
+  .form-group input:focus { background: var(--accent-blue); transform: translate(2px, 2px); box-shadow: 2px 2px 0px #000; }
+
+  button.primary {
+    width: 100%; padding: 20px; background: var(--accent-red);
+    color: #fff; border: var(--border-w) solid var(--border); border-radius: 8px; 
+    font-size: 1.2rem; font-weight: 900; cursor: pointer; text-transform: uppercase; letter-spacing: 1px;
+    box-shadow: var(--shadow); transition: all 0.1s;
+  }
+  button.primary:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 10px 10px 0px #000; }
+  button.primary:active:not(:disabled) { transform: translate(6px, 6px); box-shadow: 2px 2px 0px #000; background: #e03e3e; }
+  button.primary:disabled { background: #ccc; color: #666; cursor: not-allowed; transform: translate(4px,4px); box-shadow: 4px 4px 0px #000; }
+
+  .results { margin-top: 24px; display: flex; flex-direction: column; gap: 12px; }
+  .result-item {
+    padding: 16px; border: var(--border-w) solid var(--border); border-radius: 8px;
+    font-size: 0.95rem; font-weight: 800; box-shadow: var(--shadow-sm); background: var(--card);
+    animation: slideIn 0.2s ease forwards;
+  }
+  .result-item.ok { background: var(--accent-green); }
+  .result-item.err { background: var(--accent-red); color: #fff; }
+
+  /* =========================================
+     页面 2: SEARCH 样式
+     ========================================= */
+  .search-box { display: flex; gap: 12px; margin-bottom: 16px; }
+  .search-box input { flex: 1; margin: 0; }
+  .search-box button {
+    padding: 16px 32px; background: var(--accent-yellow); color: #000;
+    border: var(--border-w) solid var(--border); border-radius: 8px;
+    font-weight: 900; cursor: pointer; font-size: 1.1rem; text-transform: uppercase;
+    box-shadow: var(--shadow-sm); transition: all 0.1s; white-space: nowrap;
+  }
+  .search-box button:hover:not(:disabled) { transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #000; }
+  .search-box button:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
+  .search-box button:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: 2px 2px 0px #000; transform: translate(2px,2px); }
+
+  .hint { font-size: 0.9rem; font-weight: 700; margin-bottom: 24px; line-height: 1.6; }
+  .hint em { background: var(--accent-blue); padding: 2px 8px; border: 2px solid #000; font-style: normal; font-weight: 900; box-shadow: 2px 2px 0px #000; }
+
+  .parsed-tags { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
+  .parsed-tag {
+    display: inline-flex; align-items: center; gap: 8px;
+    padding: 6px 12px; border-radius: 6px; font-weight: 900; font-size: 0.85rem;
+    background: var(--accent-purple); border: 2px solid var(--border); box-shadow: 3px 3px 0px #000;
+  }
+  .parsed-tag .label { font-size: 0.75rem; background: #000; color: #fff; padding: 2px 6px; border-radius: 4px; }
+
+  .meta-text { font-size: 1rem; font-weight: 900; margin-bottom: 20px; text-transform: uppercase; border-bottom: 2px solid #000; padding-bottom: 8px;}
+  
+  .search-result-card {
+    display: flex; gap: 20px; background: var(--card);
+    border: var(--border-w) solid var(--border); border-radius: 8px;
+    padding: 20px; margin-bottom: 16px; box-shadow: var(--shadow-sm);
+    transition: all 0.15s ease;
+  }
+  .search-result-card:hover { transform: translate(-4px, -4px); box-shadow: 8px 8px 0px #000; background: #fdfdfd; }
+  
+  .search-result-card img {
+    width: 150px; height: 110px; object-fit: cover;
+    border: 3px solid var(--border); border-radius: 6px; flex-shrink: 0; box-shadow: 2px 2px 0px #000;
+  }
+  .search-result-info { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: space-between; }
+  .search-result-info .name { font-weight: 900; font-size: 1.15rem; margin-bottom: 6px; }
+  .search-result-info .desc { font-weight: 600; font-size: 0.9rem; margin-bottom: 12px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  
+  .search-meta-row { display: flex; gap: 12px; font-size: 0.8rem; font-weight: 800; flex-wrap: wrap; align-items: center; }
+  .search-tag { background: var(--bg); border: 2px solid #000; padding: 4px 8px; border-radius: 4px; box-shadow: 2px 2px 0px #000; }
+  
+  .download-btn {
+    margin-left: auto; background: var(--accent-green); color: #000; text-decoration: none;
+    border: 2px solid #000; padding: 6px 16px; font-weight: 900; font-size: 0.85rem; border-radius: 6px;
+    box-shadow: 2px 2px 0px #000; transition: all 0.1s;
+  }
+  .download-btn:hover { background: #00d66d; transform: translate(-2px,-2px); box-shadow: 4px 4px 0px #000; }
+  .download-btn:active { transform: translate(2px,2px); box-shadow: 0px 0px 0px #000; }
+
+  .empty { text-align: center; padding: 60px 0; font-weight: 900; font-size: 1.2rem; }
+  .empty .icon { font-size: 4rem; margin-bottom: 16px; }
+  
+  .spinner { display:none; margin:40px auto; width:36px; height:36px; border:4px solid var(--border); border-top-color:var(--accent-red); border-radius:50%; animation:spin .6s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg);} }
+</style>
+</head>
+<body>
+
+<div class="page-wrapper">
+  <!-- 独立移出框架的全局标题 -->
+  <div class="global-header">
+    <h1>LIBRARY AGENT</h1>
+    <span class="subtitle">AI 文件处理终端 · 硬核入库引擎</span>
+  </div>
+
+  <div class="container">
+    <!-- 顶层导航 Tabs -->
+    <div class="nav">
+      <a id="tabUpload" class="active">UPLOAD</a>
+      <a id="tabSearch">SEARCH</a>
+    </div>
+
+    <!-- ================= UPLOAD PAGE ================= -->
+    <div id="pageUpload">
+      <div class="dropzone" id="dropzone">
+        <div class="icon">📁</div>
+        <h3>DRAG & DROP FILES HERE</h3>
+        <p>JPG / PNG / PDF / DOCX (可多选)</p>
+      </div>
+      <input type="file" id="fileInput" accept="image/*,.pdf,.docx" multiple>
+
+      <div class="queue-header" id="queueHeader">
+        <span id="queueCount">待上传文件</span>
+        <button class="clear-btn" id="clearAllBtn">CLEAR ALL</button>
+      </div>
+      <div class="queue" id="queue"></div>
+
+      <div class="form-group">
+        <label>Uploader ID (操作人)</label>
+        <input type="text" id="uploader" placeholder="输入操作人标识..." value="test_user">
+      </div>
+
+      <button class="primary" id="uploadBtn" disabled>UPLOAD EVERYTHING</button>
+      <div class="results" id="uploadResults"></div>
+    </div>
+
+    <!-- ================= SEARCH PAGE ================= -->
+    <div id="pageSearch" style="display: none;">
+      <div class="search-box">
+        <input type="text" class="form-group" style="margin-bottom:0;" id="queryInput" placeholder="例如：京东七鲜七月的饮料海报..." autofocus>
+        <button id="searchBtn" disabled>SEARCH</button>
+      </div>
+      <div class="hint">
+        💡 直接输入自然语言：<em>「小明上传的」</em> <em>「7月的海报」</em> <em>「去年的PPT」</em> — AI 会自动解析
+      </div>
+
+      <div class="parsed-tags" id="parsedTags"></div>
+      <div class="meta-text" id="searchMeta"></div>
+      
+      <div class="spinner" id="spinner"></div>
+      <div class="results" id="searchError" style="display:none;"></div>
+      
+      <div id="searchResults"></div>
+      
+      <div class="empty" id="emptyState">
+        <div class="icon">🔎</div>
+        <p>INPUT DESCRIPTION TO SEARCH</p>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = ''; // 在此处配置后端接口
+
+// ================= Tab 切换逻辑 =================
+const tabUpload = document.getElementById('tabUpload');
+const tabSearch = document.getElementById('tabSearch');
+const pageUpload = document.getElementById('pageUpload');
+const pageSearch = document.getElementById('pageSearch');
+
+tabUpload.addEventListener('click', () => {
+  tabUpload.classList.add('active');
+  tabSearch.classList.remove('active');
+  pageUpload.style.display = 'block';
+  pageSearch.style.display = 'none';
+});
+
+tabSearch.addEventListener('click', () => {
+  tabSearch.classList.add('active');
+  tabUpload.classList.remove('active');
+  pageSearch.style.display = 'block';
+  pageUpload.style.display = 'none';
+});
+
+// ================= Upload 页面逻辑 =================
+const dropzone  = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const queue     = document.getElementById('queue');
+const queueHeader = document.getElementById('queueHeader');
+const queueCount  = document.getElementById('queueCount');
+const clearAllBtn = document.getElementById('clearAllBtn');
+const uploadBtn = document.getElementById('uploadBtn');
+const uploadResults = document.getElementById('uploadResults');
+
+let fileQueue = []; 
+
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('drag-over');
+  addFiles(Array.from(e.dataTransfer.files));
+});
+fileInput.addEventListener('change', () => {
+  addFiles(Array.from(fileInput.files));
+  fileInput.value = '';
+});
+
+function addFiles(files) {
+  files.forEach(f => {
+    if (!isValid(f)) return;
+    fileQueue.push({ id: Date.now() + Math.random(), file: f, status: 'waiting' });
+  });
+  renderQueue();
+}
+
+function isValid(f) {
+  const name = f.name.toLowerCase();
+  const ext = name.split('.').pop();
+  return ['jpg','jpeg','png','gif','webp','bmp','pdf','docx'].includes(ext);
+}
+
+function renderQueue() {
+  queue.innerHTML = fileQueue.map(item => {
+    const f = item.file;
+    const typeTxt = getTypeText(f.name);
+    const cls = typeClass(f.name);
+    const size = f.size > 1024*1024 ? (f.size/(1024*1024)).toFixed(1) + ' MB' : Math.round(f.size/1024) + ' KB';
+    
+    let statusHtml = '';
+    if (item.status === 'processing') statusHtml = '<span class="status processing">处理中...</span>';
+    else if (item.status === 'done') statusHtml = '<span class="status done">✓ 成功</span>';
+    else if (item.status === 'failed') statusHtml = `<span class="status failed">✕ 失败</span>`;
+    else statusHtml = `<span class="status waiting">待处理</span>`;
+
+    return `
+      <div class="file-item" data-id="${item.id}">
+        <div class="type-icon ${cls}">${typeTxt}</div>
+        <div class="info">
+          <div class="name">${f.name}</div>
+          <div class="meta">${size}${item.error ? ' · ⚠️ ' + item.error : ''}</div>
+        </div>
+        ${statusHtml}
+        ${item.status === 'waiting' ? `<button class="remove" data-id="${item.id}" title="移除">×</button>` : ''}
+      </div>`;
+  }).join('');
+
+  queue.querySelectorAll('.remove').forEach(btn => btn.addEventListener('click', () => removeFile(Number(btn.dataset.id))));
+  updateUI();
+}
+
+function removeFile(id) { fileQueue = fileQueue.filter(f => f.id !== id); renderQueue(); }
+
+function updateUI() {
+  const count = fileQueue.length;
+  queueCount.textContent = count ? `已载入 [ ${count} ] 个文件` : '待上传文件';
+  queueHeader.classList.toggle('show', count > 0);
+  uploadBtn.disabled = count === 0 || fileQueue.some(f => f.status === 'processing');
+  uploadBtn.textContent = count ? `UPLOAD [ ${count} ] FILES` : 'UPLOAD EVERYTHING';
+}
+
+clearAllBtn.addEventListener('click', () => { fileQueue = fileQueue.filter(f => f.status !== 'waiting'); renderQueue(); });
+
+function getTypeText(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (['png','jpg','jpeg','gif','webp','bmp'].includes(ext)) return 'IMG';
+  if (ext === 'pdf') return 'PDF';
+  if (ext === 'docx') return 'DOCX';
+  return 'FILE';
+}
+function typeClass(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  if (['png','jpg','jpeg','gif','webp','bmp'].includes(ext)) return 'img';
+  if (ext === 'pdf') return 'pdf';
+  if (ext === 'docx') return 'docx';
+  return '';
+}
+
+uploadBtn.addEventListener('click', async () => {
+  const pending = fileQueue.filter(f => f.status === 'waiting');
+  if (!pending.length) return;
+
+  uploadBtn.disabled = true;
+  const uploader = document.getElementById('uploader').value || 'test_user';
+  uploadResults.innerHTML = '';
+
+  for (const item of pending) {
+    item.status = 'processing';
+    renderQueue();
+    const formData = new FormData();
+    formData.append('file', item.file);
+    formData.append('uploader', uploader);
+
+    try {
+      const resp = await fetch(`${API}/api/process`, { method: 'POST', body: formData });
+      const data = await resp.json();
+      if (resp.ok) {
+        item.status = 'done';
+        let summary = data.type === 'pdf' ? `PDF · ${data.page_count}页 · ${data.indexed_count}图` : data.type === 'docx' ? `DOCX · ${data.image_count}图` : `IMAGE · ${data.embedding_dim}维`;
+        uploadResults.innerHTML += `<div class="result-item ok">✓ [${data.file_name || data.name || item.file.name}] => ${summary}</div>`;
+      } else {
+        item.status = 'failed';
+        item.error = data.error || '未知错误';
+        uploadResults.innerHTML += `<div class="result-item err">✕ [${item.file.name}] => ${data.error || '处理失败'}</div>`;
+      }
+    } catch (e) {
+      item.status = 'failed';
+      item.error = e.message;
+      uploadResults.innerHTML += `<div class="result-item err">✕ [${item.file.name}] => 网络异常</div>`;
+    }
+    renderQueue();
+    uploadResults.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
+  updateUI();
+});
+
+// ================= Search 页面逻辑 =================
+const queryInput = document.getElementById('queryInput');
+const searchBtn = document.getElementById('searchBtn');
+const spinner = document.getElementById('spinner');
+const searchError = document.getElementById('searchError');
+const searchMeta = document.getElementById('searchMeta');
+const searchResults = document.getElementById('searchResults');
+const emptyState = document.getElementById('emptyState');
+const parsedTags = document.getElementById('parsedTags');
+
+queryInput.addEventListener('input', () => searchBtn.disabled = !queryInput.value.trim());
+queryInput.addEventListener('keydown', e => { if (e.key === 'Enter' && queryInput.value.trim()) doSearch(); });
+searchBtn.addEventListener('click', doSearch);
+
+// 初始加载展示全库张数
+(async () => {
+  try {
+    const resp = await fetch(`${API}/api/images`);
+    const images = await resp.json();
+    if (Array.isArray(images) && images.length) {
+      const unique = images.length - images.filter(i => i.duplicate_of).length;
+      searchMeta.textContent = `📚 CURRENT DATABASE: ${unique} ITEMS`;
+    }
+  } catch(e) {}
+})();
+
+async function doSearch() {
+  const query = queryInput.value.trim();
+  if (!query) return;
+
+  searchBtn.disabled = true;
+  spinner.style.display = 'block';
+  searchError.style.display = 'none';
+  searchResults.innerHTML = '';
+  emptyState.style.display = 'none';
+  parsedTags.innerHTML = '';
+  searchMeta.textContent = 'SEARCHING...';
+
+  try {
+    const resp = await fetch(`${API}/api/search`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ query, top_n: 10 }),
+    });
+    const data = await resp.json();
+
+    if (!resp.ok) {
+      showSearchError(data.error || 'SEARCH FAILED');
+      return;
+    }
+
+    if (data.parsed) {
+      const tags = [];
+      if (data.parsed.uploader) tags.push(`<span class="parsed-tag"><span class="label">UPLOADER</span>${data.parsed.uploader}</span>`);
+      if (data.parsed.date_from || data.parsed.date_to) tags.push(`<span class="parsed-tag"><span class="label">DATE</span>${data.parsed.date_from || 'ANY'} ~ ${data.parsed.date_to || 'ANY'}</span>`);
+      if (data.parsed.query !== query) tags.push(`<span class="parsed-tag"><span class="label">KEYWORD</span>${data.parsed.query}</span>`);
+      parsedTags.innerHTML = tags.join('');
+    }
+
+    const results = data.results;
+    if (!results || !results.length) {
+      emptyState.innerHTML = '<div class="icon">😕</div><p>NO MATCHES FOUND</p>';
+      emptyState.style.display = 'block';
+      searchMeta.textContent = 'RESULT: 0 ITEMS';
+      return;
+    }
+
+    searchMeta.textContent = `🎯 FOUND [ ${results.length} ] MATCHES`;
+    searchResults.innerHTML = results.map(r => `
+      <div class="search-result-card">
+        <img src="${r.thumbnail_path || r.file_path}" alt="${r.file_name}" onerror="this.style.display='none'">
+        <div class="search-result-info">
+          <div>
+            <div class="name">${r.file_name}</div>
+            <div class="desc">${r.description || 'No description available.'}</div>
+          </div>
+          <div class="search-meta-row">
+            <span class="search-tag">USER: ${r.uploader || 'UNKNOWN'}</span>
+            <span class="search-tag">DATE: ${(r.upload_time || '').slice(0, 10)}</span>
+            <a href="${r.file_path}" download="${r.file_name}" class="download-btn" title="DOWNLOAD">⬇ DOWNLOAD</a>
+          </div>
+        </div>
+      </div>
+    `).join('');
+
+  } catch (e) {
+    showSearchError(`NETWORK ERROR: ${e.message}`);
+  } finally {
+    searchBtn.disabled = false;
+    spinner.style.display = 'none';
+  }
+}
+
+function showSearchError(msg) {
+  searchError.innerHTML = `<div class="result-item err">✕ ${msg}</div>`;
+  searchError.style.display = 'block';
+  searchMeta.textContent = 'ERROR OCCURRED';
+}
+</script>
+</body>
+</html>
