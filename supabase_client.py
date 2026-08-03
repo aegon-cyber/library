@@ -1,66 +1,70 @@
 """
-supabase_client - Supabase _ + _
-
-_ data.json + images.db + uploads/thumbnails/ _
-_ Supabase REST API _ PostgreSQL_
-
-_images (_ pgvector embedding _)
-_uploads / thumbnails
-_match_images (RPC)
+supabase_client — JD Cloud PostgreSQL + OSS storage module
+Replaces Supabase REST API with direct psycopg2 + boto3 (S3-compatible).
 """
 
-import os
-import sys
+import os, io, hashlib
 from datetime import datetime
 from pathlib import Path
 from typing import Optional
 
-# Monkey-patch httpx to use UTF-8 for header encoding (Render Linux fix)
-try:
-    import httpx as _httpx
-    _orig_normalize = _httpx._models._normalize_header_value
-    def _utf8_normalize(value, encoding=None):
-        return _orig_normalize(value, encoding="utf-8")
-    _httpx._models._normalize_header_value = _utf8_normalize
-except Exception:
-    pass  # different httpx version, skip monkey-patch
-
-if sys.stdout.encoding != "utf-8":
-    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
-
+import psycopg2
+import psycopg2.extras
+import boto3
 from dotenv import load_dotenv
-from supabase import create_client, Client
 
 load_dotenv()
 
-SUPABASE_URL = (os.getenv("SUPABASE_URL") or "").strip()
-SUPABASE_KEY = (os.getenv("SUPABASE_KEY") or "").strip()
+# ── DB config ──
+DB_HOST = os.getenv("DB_HOST", "localhost")
+DB_PORT = int(os.getenv("DB_PORT", "5432"))
+DB_NAME = os.getenv("DB_NAME", "library")
+DB_USER = os.getenv("DB_USER", "postgres")
+DB_PASS = os.getenv("DB_PASS", "Importantthings1")
 
-if not SUPABASE_URL or not SUPABASE_KEY:
-    raise RuntimeError("SUPABASE_URL and SUPABASE_KEY must be set in .env")
-
-_supabase: Optional[Client] = None
-
-
-def get_supabase() -> Client:
-    """_ Supabase _"""
-    global _supabase
-    if _supabase is None:
-        _supabase = create_client(SUPABASE_URL, SUPABASE_KEY)
-    return _supabase
+# ── OSS config (S3-compatible) ──
+OSS_ENDPOINT = os.getenv("OSS_ENDPOINT", "https://s3.cn-north-1.jdcloud-oss.com")
+OSS_ACCESS_KEY = os.getenv("OSS_ACCESS_KEY", "JDC_78A5C48965E8C5EDECF5882A1E1D")
+OSS_SECRET_KEY = os.getenv("OSS_SECRET_KEY", "0792A10A3F5C8488BCC4A3B7DD6BB428")
+OSS_BUCKET = os.getenv("OSS_BUCKET", "library-assets")
 
 
-# ============================================================
-# [CN]
-# ============================================================
+def _get_db():
+    """Get a psycopg2 connection."""
+    return psycopg2.connect(
+        host=DB_HOST, port=DB_PORT, dbname=DB_NAME,
+        user=DB_USER, password=DB_PASS
+    )
+
+
+def _get_oss():
+    """Get boto3 S3 client for JD Cloud OSS."""
+    return boto3.client(
+        "s3",
+        endpoint_url=OSS_ENDPOINT,
+        aws_access_key_id=OSS_ACCESS_KEY,
+        aws_secret_access_key=OSS_SECRET_KEY,
+        region_name="cn-north-1",
+    )
+
+
+# ══════════════════════════════════════════
+#  Database operations
+# ══════════════════════════════════════════
 
 def add_image(image_info: dict) -> dict:
-    """Insert image record via raw REST."""
-    import httpx, json
-    base = (os.getenv("SUPABASE_URL") or "").strip()
-    key = (os.getenv("SUPABASE_KEY") or "").strip()
-
-    row = {
+    """Insert image record with embedding."""
+    conn = _get_db()
+    cur = conn.cursor()
+    cur.execute("""
+        INSERT INTO images (file_name, file_path, thumbnail_path, uploader,
+                            upload_time, description, extra_description,
+                            source_file, source_url, embedding)
+        VALUES (%(file_name)s, %(file_path)s, %(thumbnail_path)s, %(uploader)s,
+                %(upload_time)s, %(description)s, %(extra_description)s,
+                %(source_file)s, %(source_url)s, %(embedding)s)
+        RETURNING id
+    """, {
         "file_name": image_info["file_name"],
         "file_path": image_info["file_path"],
         "thumbnail_path": image_info.get("thumbnail_path", ""),
@@ -71,42 +75,40 @@ def add_image(image_info: dict) -> dict:
         "source_file": image_info.get("source_file", ""),
         "source_url": image_info.get("source_url", ""),
         "embedding": image_info["embedding"],
-    }
-
-    r = httpx.post(
-        f"{base}/rest/v1/images",
-        headers={
-            "apikey": key, "Authorization": f"Bearer {key}",
-            "Content-Type": "application/json",
-            "Prefer": "return=representation",
-        },
-        content=json.dumps(row, ensure_ascii=True),
-    )
-    r.raise_for_status()
-    data = r.json()
-    return dict(data[0]) if data else {}
+    })
+    image_id = cur.fetchone()[0]
+    conn.commit()
+    cur.close()
+    conn.close()
+    image_info["id"] = image_id
+    return image_info
 
 
 def get_all_images() -> list[dict]:
-    """Fetch all images via raw REST."""
-    import httpx
-    base = (os.getenv("SUPABASE_URL") or "").strip()
-    key = (os.getenv("SUPABASE_KEY") or "").strip()
-    cols = "id,file_name,file_path,thumbnail_path,uploader,upload_time,description,extra_description,source_file,source_url,duplicate_of"
-    r = httpx.get(
-        f"{base}/rest/v1/images",
-        headers={"apikey": key, "Authorization": f"Bearer {key}"},
-        params={"select": cols, "order": "id.asc"},
-    )
-    r.raise_for_status()
-    return [dict(item) for item in r.json()]
+    """Fetch all image records (no embedding column)."""
+    conn = _get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("""
+        SELECT id, file_name, file_path, thumbnail_path, uploader,
+               upload_time, description, extra_description,
+               source_file, source_url, duplicate_of
+        FROM images ORDER BY id
+    """)
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def get_image_by_id(image_id: int) -> Optional[dict]:
-    """_ ID _"""
-    supabase = get_supabase()
-    result = supabase.table("images").select("*").eq("id", image_id).execute()
-    return dict(result.data[0]) if result.data else None
+    """Get single image by ID."""
+    conn = _get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("SELECT * FROM images WHERE id = %s", (image_id,))
+    row = cur.fetchone()
+    cur.close()
+    conn.close()
+    return dict(row) if row else None
 
 
 def search_similar(
@@ -115,181 +117,103 @@ def search_similar(
     match_threshold: float = 0.0,
     filters: Optional[dict] = None,
 ) -> list[dict]:
-    """_ + _
-
-    _ Supabase match_images RPC _ pgvector _
-
-    Args:
-        query_embedding: _1024 _
-        top_n: _
-        match_threshold: _0-1_
-        filters: _ {"uploader": "...", "date_from": "...", "date_to": "..."}
-
-    Returns:
-        list[dict]: _
-    """
-    import httpx
-    base = (os.getenv("SUPABASE_URL") or "").strip()
-    key = (os.getenv("SUPABASE_KEY") or "").strip()
-
-    rpc_params = {
-        "query_embedding": query_embedding,
-        "match_threshold": match_threshold,
-        "match_count": top_n,
-    }
-    if filters:
-        if "uploader" in filters:
-            rpc_params["filter_uploader"] = filters["uploader"]
-        if "date_from" in filters:
-            rpc_params["filter_date_from"] = filters["date_from"]
-        if "date_to" in filters:
-            rpc_params["filter_date_to"] = filters["date_to"]
-
-    r = httpx.post(
-        f"{base}/rest/v1/rpc/match_images",
-        headers={"apikey": key, "Authorization": f"Bearer {key}",
-                 "Content-Type": "application/json",
-                 "Content-Profile": "public"},
-        json=rpc_params,
-    )
-    if r.status_code != 200:
-        raise Exception(f"RPC failed ({r.status_code}): {r.text[:300]}")
-    return [dict(item) for item in r.json()]
+    """Vector similarity search via match_images RPC."""
+    conn = _get_db()
+    cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
+    cur.execute("""
+        SELECT * FROM match_images(
+            query_embedding := %s,
+            match_threshold := %s,
+            match_count := %s,
+            filter_uploader := %s,
+            filter_date_from := %s,
+            filter_date_to := %s
+        )
+    """, (
+        query_embedding, match_threshold, top_n,
+        filters.get("uploader") if filters else None,
+        filters.get("date_from") if filters else None,
+        filters.get("date_to") if filters else None,
+    ))
+    rows = cur.fetchall()
+    cur.close()
+    conn.close()
+    return [dict(r) for r in rows]
 
 
 def count_images() -> int:
-    """Return total image count via raw REST (bypasses supabase-py encoding)."""
-    import httpx
-    base = (os.getenv("SUPABASE_URL") or "").strip()
-    key = (os.getenv("SUPABASE_KEY") or "").strip()
-    r = httpx.get(
-        f"{base}/rest/v1/images",
-        headers={
-            "apikey": key, "Authorization": f"Bearer {key}",
-            "Prefer": "count=exact",
-        },
-        params={"select": "id"},
-    )
-    r.raise_for_status()
-    # PostgREST returns count in Content-Range header when Prefer: count=exact
-    cr = r.headers.get("content-range", "")
-    if cr and "/" in cr:
-        return int(cr.rsplit("/", 1)[-1])
-    return len(r.json())  # fallback: count returned rows
+    """Return total image count."""
+    conn = _get_db()
+    cur = conn.cursor()
+    cur.execute("SELECT count(*) FROM images")
+    cnt = cur.fetchone()[0]
+    cur.close()
+    conn.close()
+    return cnt
 
 
 def clear_all() -> int:
-    """_"""
-    supabase = get_supabase()
-    result = supabase.table("images").delete().neq("id", -1).execute()
-    return len(result.data or [])
+    """Delete all images."""
+    conn = _get_db()
+    cur = conn.cursor()
+    cur.execute("DELETE FROM images")
+    conn.commit()
+    deleted = cur.rowcount
+    cur.close()
+    conn.close()
+    return deleted
 
 
-# ============================================================
-# [CN]
-# ============================================================
+# ══════════════════════════════════════════
+#  Storage operations (JD Cloud OSS)
+# ══════════════════════════════════════════
 
 def upload_to_storage(bucket: str, local_path: Path, remote_name: Optional[str] = None) -> str:
-    """_ Supabase Storage_ URL_
-
-    _ ASCII _ Storage _ InvalidKey _
-
-    Args:
-        bucket: _ ("uploads" | "thumbnails")_
-        local_path: _
-        remote_name: _
-
-    Returns:
-        str: _ URL_
-    """
-    import httpx
-    base = (os.getenv("SUPABASE_URL") or "").strip()
-    key = (os.getenv("SUPABASE_KEY") or "").strip()
-
+    """Upload file to JD Cloud OSS, return public URL."""
+    s3 = _get_oss()
     if remote_name is None:
         remote_name = _safe_storage_name(local_path.name)
-
+    actual_bucket = OSS_BUCKET  # Use single bucket with prefix
+    key = f"{bucket}/{remote_name}"
     with open(local_path, "rb") as f:
-        r = httpx.post(
-            f"{base}/storage/v1/object/{bucket}/{remote_name}",
-            headers={"apikey": key, "Authorization": f"Bearer {key}",
-                     "x-upsert": "true"},
-            content=f.read(),
-        )
-    r.raise_for_status()
-
-    return f"{base}/storage/v1/object/public/{bucket}/{remote_name}"
-
-
-def _safe_storage_name(filename: str) -> str:
-    """_ Supabase Storage _
-
-    _ ASCII _
-    _ ASCII _ hash _
-    """
-    import hashlib
-
-    stem = Path(filename).stem
-    suffix = Path(filename).suffix
-
-    # [CN] ASCII[CN]
-    if all(ord(c) < 128 for c in filename):
-        return filename
-
-    # [CN] hash [CN]
-    name_hash = hashlib.md5(filename.encode("utf-8")).hexdigest()[:8]
-    # [CN] ASCII [CN]
-    ascii_part = "".join(c for c in stem if c.isascii() and (c.isalnum() or c in "-_."))[:20]
-    safe_name = f"{ascii_part}_{name_hash}{suffix}" if ascii_part else f"img_{name_hash}{suffix}"
-    return safe_name
+        s3.upload_fileobj(f, actual_bucket, key, ExtraArgs={"ACL": "public-read"})
+    return f"{OSS_ENDPOINT}/{actual_bucket}/{key}"
 
 
 def delete_from_storage(bucket: str, remote_name: str) -> None:
-    """_ Storage _"""
-    supabase = get_supabase()
-    supabase.storage.from_(bucket).remove([remote_name])
+    """Delete file from OSS."""
+    s3 = _get_oss()
+    key = f"{bucket}/{remote_name}"
+    s3.delete_object(Bucket=OSS_BUCKET, Key=key)
+
+
+def _safe_storage_name(filename: str) -> str:
+    """Sanitize filename for storage."""
+    stem = Path(filename).stem
+    suffix = Path(filename).suffix
+    if all(ord(c) < 128 for c in filename):
+        return filename
+    name_hash = hashlib.md5(filename.encode("utf-8")).hexdigest()[:8]
+    ascii_part = "".join(c for c in stem if c.isascii() and (c.isalnum() or c in "-_."))[:20]
+    return f"{ascii_part}_{name_hash}{suffix}" if ascii_part else f"img_{name_hash}{suffix}"
 
 
 def _guess_mime(path: Path) -> str:
-    """_ MIME _"""
     suffix = path.suffix.lower()
-    mime_map = {
-        ".png": "image/png",
-        ".jpg": "image/jpeg",
-        ".jpeg": "image/jpeg",
-        ".gif": "image/gif",
-        ".bmp": "image/bmp",
-        ".webp": "image/webp",
-    }
-    return mime_map.get(suffix, "application/octet-stream")
+    return {
+        ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
+        ".gif": "image/gif", ".bmp": "image/bmp", ".webp": "image/webp",
+    }.get(suffix, "application/octet-stream")
 
-
-# ============================================================
-# [CN]
-# ============================================================
 
 def check_connection() -> dict:
-    """_ Supabase _"""
     try:
-        supabase = get_supabase()
-        count = count_images()
-        buckets = supabase.storage.list_buckets()
-        bucket_names = [b.name for b in buckets]
-        return {
-            "status": "ok",
-            "image_count": count,
-            "buckets": bucket_names,
-        }
+        cnt = count_images()
+        return {"status": "ok", "image_count": cnt}
     except Exception as e:
         return {"status": "error", "message": str(e)}
 
 
-# ============================================================
-# [CN]
-# ============================================================
-
-if __name__ == "__main__":
-    status = check_connection()
-    print("Supabase connection test:")
-    for k, v in status.items():
-        print(f"  {k}: {v}")
+def get_supabase():
+    """Backward compat: some old code imports this."""
+    return None

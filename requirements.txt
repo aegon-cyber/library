@@ -2,7 +2,6 @@ zhipuai
 pillow
 python-dotenv
 python-docx
-supabase
 flask
 flask-cors
 PyMuPDF
@@ -10,3 +9,5 @@ httpx
 sniffio
 waitress
 gunicorn
+psycopg2-binary
+boto3
