@@ -162,11 +162,11 @@ window.addEventListener('beforeunload', e => {
   if (isProcessing) { e.preventDefault(); e.returnValue = 'Upload in progress!'; }
 });
 
-dropzone.addEventListener('click', () => fileInput.click());
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
-dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); addFiles(Array.from(e.dataTransfer.files)); });
-fileInput.addEventListener('change', () => { addFiles(Array.from(fileInput.files)); fileInput.value = ''; });
+// Upload disabled: dropzone.addEventListener('click', () => fileInput.click());
+// Upload disabled: dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+// Upload disabled
+// Upload disabled
+// Upload disabled
 
 function addFiles(files) {
   files.forEach(f => { if (isValid(f)) fileQueue.push({ id: Date.now() + Math.random(), file: f, status: 'waiting' }); });
