@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LIBRARY AGENT — Upload</title>
+<title>LIBRARY AGENT（测试版） — Upload</title>
 <style>
   :root {
     --bg: #F8F8F8; --card: #FFFFFF; --border: #1a1a1a; --text: #1a1a1a;
@@ -111,7 +111,7 @@
   <div class="global-header">
         <div class="logo"><img src="/logo-small.png" alt="JD"></div>
         <div>
-    <h1>LIBRARY AGENT<span style="font-size:0.6em;font-weight:400;color:var(--muted);">（测试版）</span></h1>
+    <h1>LIBRARY AGENT</h1>
     <div class="subtitle">AI 文件处理终端 · 硬核入库引擎</div>
         </div>
   </div>
@@ -121,12 +121,12 @@
       <a href="/library-web/">文件库</a>
     </div>
 
-    <div class="dropzone" id="dropzone">
-      <div class="icon">📁</div>
-      <h3>拖拽文件到此处</h3>
-      <p>JPG / PNG / PDF / DOCX（可多选）</p>
+    <div class="dropzone" style="background:#e8e8e8;border-color:#bbb;cursor:not-allowed;box-shadow:none;transform:none!important;" id="dropzone">
+      <div class="icon" style="opacity:0.35;">🚫</div>
+      <h3 style="color:#999;">上传功能暂未开放</h3>
+      <p style="color:#aaa;">（待开放）</p>
     </div>
-    <input type="file" id="fileInput" accept="image/*,.pdf,.docx" multiple>
+    <input type="file" id="fileInput" accept="image/*,.pdf,.docx" multiple disabled>
 
     <div class="queue-header" id="queueHeader">
       <span id="queueCount">队列</span>
