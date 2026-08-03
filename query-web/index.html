@@ -46,8 +46,7 @@
   .search-box button:active:not(:disabled) { transform: translate(4px, 4px); box-shadow: 0px 0px 0px #000; }
   .search-box button:disabled { opacity: 0.6; cursor: not-allowed; box-shadow: 2px 2px 0px #000; transform: translate(2px,2px); }
 
-  .hint { font-size: 0.9rem; font-weight: 700; margin-bottom: 24px; line-height: 1.6; }
-  .hint em { background: var(--bg); padding: 2px 8px; border: 2px solid #000; font-style: normal; font-weight: 900; box-shadow: 2px 2px 0px #000; }
+  .hint { font-size: 0.85rem; margin-bottom: 24px; color: var(--muted); font-style: italic; }
   .parsed-tags { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 24px; }
   .parsed-tag { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; border-radius: 6px; font-weight: 900; font-size: 0.85rem; background: var(--bg); border: 2px solid var(--border); box-shadow: 3px 3px 0px #000; }
   .parsed-tag .label { font-size: 0.75rem; background: #000; color: #fff; padding: 2px 6px; border-radius: 4px; }
@@ -101,7 +100,7 @@
       <button id="searchBtn" disabled>搜索</button>
     </div>
     <div class="hint">
-      💡 自然语言搜索：<em>「上传人:A」</em> <em>「7月的海报」</em> <em>「去年的文档」</em> — AI 自动解析过滤条件
+      <em>搜不到别急，换个姿势试试关键词～</em>
     </div>
 
     <div class="parsed-tags" id="parsedTags"></div>
