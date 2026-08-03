@@ -88,21 +88,21 @@
 <div class="page-wrapper">
   <div class="global-header">
     <h1>LIBRARY AGENT</h1>
-    <span class="subtitle">SEMANTIC IMAGE SEARCH ENGINE</span>
+    <span class="subtitle">语义图像搜索引擎</span>
   </div>
   <div class="container">
     <div class="nav">
-      <a href="/upload-web/">UPLOAD</a>
-      <a href="/query-web/" class="active">SEARCH</a>
-      <a href="/library-web/">LIBRARY</a>
+      <a href="/upload-web/">上传</a>
+      <a href="/query-web/" class="active">搜索</a>
+      <a href="/library-web/">文件库</a>
     </div>
 
     <div class="search-box">
-      <input type="text" id="queryInput" placeholder="e.g. JD Health summer drink poster..." autofocus>
-      <button id="searchBtn" disabled>SEARCH</button>
+      <input type="text" id="queryInput" placeholder="例如：京东七鲜七月的饮料海报..." autofocus>
+      <button id="searchBtn" disabled>搜索</button>
     </div>
     <div class="hint">
-      💡 Natural language: <em>「user:A」</em> <em>「July posters」</em> <em>「last year」</em> — AI parses automatically
+      💡 自然语言搜索：<em>「上传人:A」</em> <em>「7月的海报」</em> <em>「去年的文档」</em> — AI 自动解析过滤条件
     </div>
 
     <div class="parsed-tags" id="parsedTags"></div>
@@ -112,7 +112,7 @@
     <div id="searchResults"></div>
     <div class="empty" id="emptyState">
       <div class="icon">🔎</div>
-      <p>INPUT DESCRIPTION TO SEARCH</p>
+      <p>输入描述开始搜索</p>
     </div>
   </div>
 </div>
@@ -143,8 +143,8 @@ searchBtn.addEventListener('click', doSearch);
     if (Array.isArray(imgs) && imgs.length) {
       const dupes = imgs.filter(i => i.duplicate_of).length;
       const unique = imgs.length - dupes;
-      let txt = `DATABASE: ${unique} UNIQUE ITEMS`;
-      if (dupes > 0) txt += ` (${dupes} DUPLICATES HIDDEN)`;
+      let txt = `数据库：${unique} 张独立图片`;
+      if (dupes > 0) txt += ` (${dupes} 张重复已隐藏)`;
       searchMeta.textContent = txt;
     }
   } catch(e) {}
@@ -156,7 +156,7 @@ async function doSearch() {
   searchBtn.disabled = true; spinner.style.display = 'block';
   searchError.style.display = 'none'; searchResults.innerHTML = '';
   emptyState.style.display = 'none'; parsedTags.innerHTML = '';
-  searchMeta.textContent = 'SEARCHING...';
+  searchMeta.textContent = '搜索ING...';
 
   try {
     const r = await fetch(`${API}/api/search`, {
@@ -164,25 +164,25 @@ async function doSearch() {
       body: JSON.stringify({ query, top_n: 10 }),
     });
     const data = await r.json();
-    if (!r.ok) { showSearchError(data.error || 'SEARCH FAILED'); return; }
+    if (!r.ok) { showSearchError(data.error || '搜索 FAILED'); return; }
 
     if (data.parsed) {
       const tags = [];
-      if (data.parsed.uploader) tags.push(`<span class="parsed-tag"><span class="label">UPLOADER</span>${data.parsed.uploader}</span>`);
-      if (data.parsed.date_from || data.parsed.date_to) tags.push(`<span class="parsed-tag"><span class="label">DATE</span>${data.parsed.date_from||'...'}~${data.parsed.date_to||'...'}</span>`);
-      if (data.parsed.query !== query) tags.push(`<span class="parsed-tag"><span class="label">QUERY</span>${data.parsed.query}</span>`);
+      if (data.parsed.uploader) tags.push(`<span class="parsed-tag"><span class="label">上传ER</span>${data.parsed.uploader}</span>`);
+      if (data.parsed.date_from || data.parsed.date_to) tags.push(`<span class="parsed-tag"><span class="label">日期</span>${data.parsed.date_from||'...'}~${data.parsed.date_to||'...'}</span>`);
+      if (data.parsed.query !== query) tags.push(`<span class="parsed-tag"><span class="label">搜索词</span>${data.parsed.query}</span>`);
       parsedTags.innerHTML = tags.join('');
     }
 
     const results = data.results;
     if (!results || !results.length) {
-      emptyState.innerHTML = '<div class="icon">😕</div><p>NO MATCHES FOUND</p>';
+      emptyState.innerHTML = '<div class="icon">😕</div><p>没有匹配结果</p>';
       emptyState.style.display = 'block';
-      searchMeta.textContent = 'RESULT: 0 ITEMS';
+      searchMeta.textContent = '结果：0 张';
       return;
     }
 
-    searchMeta.textContent = `FOUND [ ${results.length} ] MATCHES`;
+    searchMeta.textContent = `找到 [ ${results.length} ] 条结果`;
     searchResults.innerHTML = results.map(r => {
       const srcHtml = r.source_file ? `<div class="source-link">📎 <a href="${r.source_url||'#'}" target="_blank">${r.source_file}</a></div>` : '';
       return `<div class="search-result-card">
@@ -190,20 +190,20 @@ async function doSearch() {
         <div class="search-result-info">
           <div>
             <div class="name">${r.file_name}</div>
-            <div class="desc">${r.description || 'No description.'}</div>
+            <div class="desc">${r.description || '无描述'}</div>
             ${srcHtml}
           </div>
           <div class="search-meta-row">
             <span class="search-tag">${r.uploader||'?'}</span>
             <span class="search-tag">${(r.upload_time||'').slice(0,10)}</span>
-            <a href="${r.file_path}" download="${r.file_name}" class="download-btn" title="DOWNLOAD ORIGINAL">⬇ DOWNLOAD</a>
+            <a href="${r.file_path}" download="${r.file_name}" class="download-btn" title="下载原图">⬇ 下载</a>
           </div>
         </div>
       </div>`;
     }).join('');
 
   } catch (e) {
-    showSearchError(`NETWORK ERROR: ${e.message}`);
+    showSearchError(`网络错误： ${e.message}`);
   } finally {
     searchBtn.disabled = false; spinner.style.display = 'none';
   }
@@ -212,7 +212,7 @@ async function doSearch() {
 function showSearchError(msg) {
   searchError.innerHTML = `<div class="result-item err">✕ ${msg}</div>`;
   searchError.style.display = 'block';
-  searchMeta.textContent = 'ERROR';
+  searchMeta.textContent = '异常';
 }
 
 function openLightbox(url) {

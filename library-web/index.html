@@ -77,25 +77,25 @@
 <div class="page-wrapper">
   <div class="global-header">
     <h1>LIBRARY AGENT</h1>
-    <span class="subtitle">INDEXED FILE BROWSER</span>
+    <span class="subtitle">已索引文件浏览器</span>
   </div>
   <div class="container">
     <div class="nav">
-      <a href="/upload-web/">UPLOAD</a>
-      <a href="/query-web/">SEARCH</a>
-      <a href="/library-web/" class="active">LIBRARY</a>
+      <a href="/upload-web/">上传</a>
+      <a href="/query-web/">搜索</a>
+      <a href="/library-web/" class="active">文件库</a>
     </div>
 
     <div class="tabs" id="tabs">
       <button class="tab on" data-type="docx">📄 DOCX<span class="count" id="cnt-docx"></span></button>
       <button class="tab" data-type="pdf">📕 PDF<span class="count" id="cnt-pdf"></span></button>
-      <button class="tab" data-type="image">🖼 IMAGE<span class="count" id="cnt-image"></span></button>
-      <button class="tab" data-type="all">ALL<span class="count" id="cnt-all"></span></button>
+      <button class="tab" data-type="image">🖼 图片<span class="count" id="cnt-image"></span></button>
+      <button class="tab" data-type="all">全部<span class="count" id="cnt-all"></span></button>
     </div>
 
     <div class="spinner" id="spinner"></div>
     <div id="list"></div>
-    <div class="empty" id="empty"><p>LOADING...</p></div>
+    <div class="empty" id="empty"><p>加载中...</p></div>
   </div>
 </div>
 
@@ -133,7 +133,7 @@ function renderList() {
   const filtered = currentType === 'all' ? allGroups : allGroups.filter(g => g.type === currentType);
   const list = document.getElementById('list');
   const empty = document.getElementById('empty');
-  if (!filtered.length) { empty.innerHTML = '<p>NO FILES IN THIS CATEGORY</p>'; empty.style.display='block'; list.innerHTML=''; return; }
+  if (!filtered.length) { empty.innerHTML = '<p>此分类暂无文件</p>'; empty.style.display='block'; list.innerHTML=''; return; }
   empty.style.display='none';
 
   const iconMap = { docx:'📄', pdf:'📕', image:'🖼' };
@@ -145,11 +145,11 @@ function renderList() {
     return `<div class="file-card">
       <div class="thumb ${g.type}">${thumb ? `<img src="${thumb}">` : iconMap[g.type]}</div>
       <div class="info">
-        <div class="name">${g.name || '(unnamed)'}</div>
+        <div class="name">${g.name || '(未命名)'}</div>
         <div class="meta"><span>${g.uploader||'-'}</span><span>${time||'-'}</span></div>
       </div>
-      <div class="img-count">${imgCount} IMG</div>
-      ${dlUrl ? `<div class="dl-btn"><a href="${dlUrl}" download>⬇ DOWNLOAD</a></div>` : ''}
+      <div class="img-count">${imgCount} 张图</div>
+      ${dlUrl ? `<div class="dl-btn"><a href="${dlUrl}" download>⬇ 下载</a></div>` : ''}
     </div>`;
   }).join('');
 }
@@ -171,7 +171,7 @@ document.getElementById('tabs').addEventListener('click', e => {
       renderTabs();
       renderList();
     }
-  } catch(e) { document.getElementById('empty').innerHTML = '<p>LOAD FAILED</p>'; }
+  } catch(e) { document.getElementById('empty').innerHTML = '<p>加载失败</p>'; }
 })();
 </script>
 </body>

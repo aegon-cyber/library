@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>LIBRARY AGENT — Upload</title>
+<title>文件库 AGENT — Upload</title>
 <style>
   :root {
     --bg: #F4F0E6; --card: #FFFFFF; --border: #000000; --text: #000000;
@@ -107,35 +107,35 @@
 <body>
 <div class="page-wrapper">
   <div class="global-header">
-    <h1>LIBRARY AGENT</h1>
-    <span class="subtitle">AI FILE PROCESSING TERMINAL</span>
+    <h1>文件库 AGENT</h1>
+    <span class="subtitle">AI 文件处理终端 · 硬核入库引擎</span>
   </div>
   <div class="container">
     <div class="nav">
-      <a href="/upload-web/" class="active">UPLOAD</a>
-      <a href="/query-web/">SEARCH</a>
-      <a href="/library-web/">LIBRARY</a>
+      <a href="/upload-web/" class="active">上传</a>
+      <a href="/query-web/">搜索</a>
+      <a href="/library-web/">文件库</a>
     </div>
 
     <div class="dropzone" id="dropzone">
       <div class="icon">📁</div>
-      <h3>DRAG & DROP FILES HERE</h3>
-      <p>JPG / PNG / PDF / DOCX (MULTI-SELECT)</p>
+      <h3>拖拽文件到此处</h3>
+      <p>JPG / PNG / PDF / DOCX（可多选）</p>
     </div>
     <input type="file" id="fileInput" accept="image/*,.pdf,.docx" multiple>
 
     <div class="queue-header" id="queueHeader">
-      <span id="queueCount">QUEUE</span>
-      <button class="clear-btn" id="clearAllBtn">CLEAR ALL</button>
+      <span id="queueCount">队列</span>
+      <button class="clear-btn" id="clearAllBtn">清空全部</button>
     </div>
     <div class="queue" id="queue"></div>
 
     <div class="form-group">
-      <label>UPLOADER ID</label>
-      <input type="text" id="uploader" placeholder="Enter operator ID..." value="test_user">
+      <label>操作人 ID</label>
+      <input type="text" id="uploader" placeholder="输入操作人标识..." value="test_user">
     </div>
 
-    <button class="primary" id="uploadBtn" disabled>UPLOAD EVERYTHING</button>
+    <button class="primary" id="uploadBtn" disabled>全部上传</button>
     <div class="results" id="uploadResults"></div>
   </div>
 </div>
@@ -178,10 +178,10 @@ function renderQueue() {
     const cls = typeClass(f.name);
     const size = f.size > 1024*1024 ? (f.size/(1024*1024)).toFixed(1) + ' MB' : Math.round(f.size/1024) + ' KB';
     let s = '';
-    if (item.status === 'processing') s = '<span class="status processing">PROCESSING...</span>';
-    else if (item.status === 'done') s = '<span class="status done">DONE</span>';
-    else if (item.status === 'failed') s = '<span class="status failed">FAILED</span>';
-    else s = '<span class="status waiting">QUEUED</span>';
+    if (item.status === 'processing') s = '<span class="status processing">处理中...</span>';
+    else if (item.status === 'done') s = '<span class="status done">成功</span>';
+    else if (item.status === 'failed') s = '<span class="status failed">失败</span>';
+    else s = '<span class="status waiting">队列D</span>';
     return `<div class="file-item"><div class="type-icon ${cls}">${typeText(f.name)}</div><div class="info"><div class="name">${f.name}</div><div class="meta">${size}${item.error ? ' ⚠ '+item.error : ''}</div></div>${s}${item.status==='waiting'?`<button class="remove" data-id="${item.id}">×</button>`:''}</div>`;
   }).join('');
   queue.querySelectorAll('.remove').forEach(b => b.addEventListener('click', () => { fileQueue = fileQueue.filter(x => x.id !== Number(b.dataset.id)); renderQueue(); }));
@@ -189,10 +189,10 @@ function renderQueue() {
 }
 function updateUI() {
   const c = fileQueue.length;
-  queueCount.textContent = c ? `QUEUE [ ${c} ] FILES` : 'QUEUE';
+  queueCount.textContent = c ? `队列 [ ${c} ] 个文件` : '队列';
   queueHeader.classList.toggle('show', c > 0);
   uploadBtn.disabled = c === 0 || fileQueue.some(f => f.status === 'processing');
-  uploadBtn.textContent = c ? `UPLOAD [ ${c} ] FILES` : 'UPLOAD EVERYTHING';
+  uploadBtn.textContent = c ? `上传 [ ${c} ] 个文件` : '全部上传';
 }
 clearAllBtn.addEventListener('click', () => { fileQueue = fileQueue.filter(f => f.status !== 'waiting'); renderQueue(); });
 
@@ -214,15 +214,15 @@ uploadBtn.addEventListener('click', async () => {
       const data = await resp.json();
       if (resp.ok) {
         item.status = 'done';
-        let sum = data.type === 'accepted' ? 'ACCEPTED - processing in background' : data.type === 'docx' ? `DOCX · ${data.image_count} images` : `IMAGE · ${data.embedding_dim}d`;
+        let sum = data.type === 'accepted' ? '已接收 - 后台处理中' : data.type === 'docx' ? `DOCX · ${data.image_count} 张图` : `图片 · ${data.embedding_dim}d`;
         uploadResults.innerHTML += `<div class="result-item ok">✓ ${data.file_name || data.name || item.file.name} — ${sum}</div>`;
       } else {
         item.status = 'failed'; item.error = data.error || 'Error';
-        uploadResults.innerHTML += `<div class="result-item err">✕ ${item.file.name} — ${data.error || 'Failed'}</div>`;
+        uploadResults.innerHTML += `<div class="result-item err">✕ ${item.file.name} — ${data.error || '失败'}</div>`;
       }
     } catch (e) {
       item.status = 'failed'; item.error = e.message;
-      uploadResults.innerHTML += `<div class="result-item err">✕ ${item.file.name} — Network error</div>`;
+      uploadResults.innerHTML += `<div class="result-item err">✕ ${item.file.name} — 网络异常</div>`;
     }
     renderQueue();
     uploadResults.scrollIntoView({ behavior: 'smooth', block: 'end' });
