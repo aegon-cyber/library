@@ -159,7 +159,8 @@ function renderList() {
     const imgCount = g.images.length;
     // Thumbnail: use first image's thumbnail or file_path
     const thumb = g.thumbnail || '';
-    const dl = g.url ? `<a href="${g.url}" download style="color:var(--accent);text-decoration:none;font-size:0.8rem;" title="下载来源文件">⬇</a>` : '';
+    const dlUrl = g.url || (g.images[0]?.file_path || '');
+    const dl = dlUrl ? `<a href="${dlUrl}" download style="color:var(--accent);text-decoration:none;font-size:0.8rem;" title="下载文件">⬇</a>` : '';
     return `
     <div class="file-card">
       <div class="icon ${g.type}">

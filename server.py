@@ -225,7 +225,7 @@ def _handle_process():
                 process_docx(temp_path.as_posix(), uploader=uploader, source_name=fn)
             else:
                 from upload_test import process_image
-                process_image(str(temp_path), uploader=uploader)
+                process_image(str(temp_path), uploader=uploader, source_file=fn)
         except Exception as e:
             print(f"BG process failed: {e}")
         finally:
