@@ -146,7 +146,6 @@ searchBtn.addEventListener('click', doSearch);
       const dupes = imgs.filter(i => i.duplicate_of).length;
       const unique = imgs.length - dupes;
       let txt = `数据库：${unique} 张独立图片`;
-      if (dupes > 0) txt += ` (${dupes} 张重复已隐藏)`;
       searchMeta.textContent = txt;
     }
   } catch(e) {}
