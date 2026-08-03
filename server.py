@@ -377,9 +377,9 @@ def serve_query_web(filename):
     return send_from_directory(str(BASE_DIR / "query-web"), filename)
 
 
-@app.route("/PR-Logo-small.png")
+@app.route("/logo-small.png")
 def serve_logo():
-    return send_from_directory(str(BASE_DIR), "PR-Logo-small.png")
+    return send_from_directory(str(BASE_DIR), "logo-small.png")
 
 
 @app.route("/")
