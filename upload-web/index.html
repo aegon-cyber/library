@@ -122,12 +122,12 @@
       <a href="/library-web/">文件库</a>
     </div>
 
-    <div class="dropzone" style="background:#e8e8e8;border-color:#bbb;cursor:not-allowed;box-shadow:none;transform:none!important;" id="dropzone">
-      <div class="icon" style="opacity:0.35;">🚫</div>
-      <h3 style="color:#999;">上传功能暂未开放</h3>
-      <p style="color:#aaa;">（待开放）</p>
+    <div class="dropzone" id="dropzone">
+      <div class="icon" >📁</div>
+      <h3>拖拽文件到此处</h3>
+      <p>JPG / PNG / PDF / DOCX（可多选）</p>
     </div>
-    <input type="file" id="fileInput" accept="image/*,.pdf,.docx" multiple disabled>
+    <input type="file" id="fileInput" accept="image/*,.pdf,.docx" multiple>
 
     <div class="queue-header" id="queueHeader">
       <span id="queueCount">队列</span>
@@ -163,11 +163,11 @@ window.addEventListener('beforeunload', e => {
   if (isProcessing) { e.preventDefault(); e.returnValue = 'Upload in progress!'; }
 });
 
-// Upload disabled: dropzone.addEventListener('click', () => fileInput.click());
-// Upload disabled: dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
-// Upload disabled
-// Upload disabled
-// Upload disabled
+dropzone.addEventListener('click', () => fileInput.click());
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('drag-over'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('drag-over'));
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('drag-over'); addFiles(Array.from(e.dataTransfer.files)); });
+fileInput.addEventListener('change', () => { addFiles(Array.from(fileInput.files)); fileInput.value = ''; });
 
 function addFiles(files) {
   files.forEach(f => { if (isValid(f)) fileQueue.push({ id: Date.now() + Math.random(), file: f, status: 'waiting' }); });
@@ -215,11 +215,11 @@ uploadBtn.addEventListener('click', async () => {
     const fd = new FormData();
     fd.append('file', item.file); fd.append('uploader', uploader);
     try {
-      const resp = await fetch(`${API}/api/process`, { method: 'POST', body: fd });
+      const resp = await fetch(`${API}/api/upload`, { method: 'POST', body: fd });
       const data = await resp.json();
       if (resp.ok) {
         item.status = 'done';
-        let sum = data.type === 'accepted' ? '已接收 - 后台处理中' : data.type === 'docx' ? `DOCX · ${data.image_count} 张图` : `图片 · ${data.embedding_dim}d`;
+        let sum = data.type === 'received' ? '已接收，后台处理中' : data.type === 'docx' ? `DOCX · ${data.image_count} 张图` : `图片 · ${data.embedding_dim}d`;
         uploadResults.innerHTML += `<div class="result-item ok">✓ ${data.file_name || data.name || item.file.name} — ${sum}</div>`;
       } else {
         item.status = 'failed'; item.error = data.error || 'Error';

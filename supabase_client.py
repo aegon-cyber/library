@@ -39,12 +39,16 @@ def _get_db():
 
 def _get_oss():
     """Get boto3 S3 client for JD Cloud OSS."""
+    from botocore.config import Config
+    import os as _os
+    _os.environ["AWS_REQUEST_CHECKSUM_CALCULATION"] = "WHEN_REQUIRED"
     return boto3.client(
         "s3",
         endpoint_url=OSS_ENDPOINT,
         aws_access_key_id=OSS_ACCESS_KEY,
         aws_secret_access_key=OSS_SECRET_KEY,
         region_name="cn-north-1",
+        config=Config(signature_version="s3v4", request_checksum_calculation="when_required"),
     )
 
 
@@ -97,7 +101,14 @@ def get_all_images() -> list[dict]:
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    return [dict(r) for r in rows]
+    result = []
+    for r in rows:
+        d = dict(r)
+        for k, v in d.items():
+            if hasattr(v, 'isoformat'):
+                d[k] = v.isoformat()
+        result.append(d)
+    return result
 
 
 def get_image_by_id(image_id: int) -> Optional[dict]:
@@ -121,14 +132,7 @@ def search_similar(
     conn = _get_db()
     cur = conn.cursor(cursor_factory=psycopg2.extras.DictCursor)
     cur.execute("""
-        SELECT * FROM match_images(
-            query_embedding := %s,
-            match_threshold := %s,
-            match_count := %s,
-            filter_uploader := %s,
-            filter_date_from := %s,
-            filter_date_to := %s
-        )
+        SELECT * FROM match_images(%s::vector, %s, %s, %s, %s, %s)
     """, (
         query_embedding, match_threshold, top_n,
         filters.get("uploader") if filters else None,
@@ -138,7 +142,14 @@ def search_similar(
     rows = cur.fetchall()
     cur.close()
     conn.close()
-    return [dict(r) for r in rows]
+    result = []
+    for r in rows:
+        d = dict(r)
+        for k, v in d.items():
+            if hasattr(v, 'isoformat'):
+                d[k] = v.isoformat()
+        result.append(d)
+    return result
 
 
 def count_images() -> int:
@@ -175,8 +186,16 @@ def upload_to_storage(bucket: str, local_path: Path, remote_name: Optional[str] 
         remote_name = _safe_storage_name(local_path.name)
     actual_bucket = OSS_BUCKET  # Use single bucket with prefix
     key = f"{bucket}/{remote_name}"
-    with open(local_path, "rb") as f:
-        s3.upload_fileobj(f, actual_bucket, key, ExtraArgs={"ACL": "public-read"})
+    data = local_path.read_bytes()
+    for attempt in range(3):
+        try:
+            s3.put_object(Bucket=actual_bucket, Key=key, Body=data, ACL="public-read")
+            break
+        except Exception as e:
+            if attempt == 2:
+                raise
+            print(f"  OSS retry {attempt+1}: {e}")
+            import time as _t; _t.sleep(2)
     return f"{OSS_ENDPOINT}/{actual_bucket}/{key}"
 
 

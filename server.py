@@ -164,6 +164,49 @@ _JSON_"""
 # API [CN]
 # ============================================================
 
+@app.route("/api/upload", methods=["POST"])
+def api_upload():
+    """Receive file, stash to OSS, return immediately."""
+    if "file" not in request.files:
+        return jsonify({"error": "No file"}), 400
+    file = request.files["file"]
+    if not file.filename:
+        return jsonify({"error": "Empty filename"}), 400
+
+    fn = file.filename.rsplit('/', 1)[-1].rsplit('\\', 1)[-1]
+    uploader = request.form.get("uploader", "test_user")
+    suffix = '.' + fn.rsplit('.', 1)[-1].lower() if '.' in fn else ''
+
+    import tempfile, hashlib
+    tmp = tempfile.NamedTemporaryFile(suffix=suffix, delete=False)
+    file.save(tmp.name)
+    tmp.close()
+    temp_path = Path(tmp.name)
+
+    try:
+        from datetime import datetime
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_name = f"incoming/{ts}_{hashlib.md5(fn.encode()).hexdigest()[:8]}{suffix}"
+
+        # Save to OSS incoming folder
+        from supabase_client import _get_oss, OSS_BUCKET
+        s3 = _get_oss()
+        with open(temp_path, "rb") as f:
+            s3.put_object(Bucket=OSS_BUCKET, Key=safe_name, Body=f.read())
+
+        # Save metadata as a JSON sidecar
+        meta = {"original_name": fn, "uploader": uploader, "time": datetime.now().isoformat()}
+        s3.put_object(Bucket=OSS_BUCKET, Key=safe_name + ".meta.json",
+                      Body=_json.dumps(meta, ensure_ascii=False))
+
+        return jsonify({"type": "received", "file": fn, "status": "queued"})
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    finally:
+        try: temp_path.unlink()
+        except: pass
+
+
 @app.route("/api/process", methods=["POST"])
 def api_process():
     """_ → AI_ → _ → Supabase_PDF_DOCX_"""
@@ -212,29 +255,23 @@ def _handle_process():
     tmp.close()
     temp_path = Path(tmp.name)
 
-    # ── Async: spawn background thread, return immediately ──
-    import threading
-
-    def _process_bg():
-        try:
-            if suffix == ".pdf":
-                from pdf_processor import process_pdf
-                process_pdf(temp_path.as_posix(), uploader=uploader, source_name=fn)
-            elif suffix == ".docx":
-                from docx_processor import process_docx
-                process_docx(temp_path.as_posix(), uploader=uploader, source_name=fn)
-            else:
-                from upload_test import process_image
-                process_image(str(temp_path), uploader=uploader, source_file=fn)
-        except Exception as e:
-            print(f"BG process failed: {e}")
-        finally:
-            try: temp_path.unlink()
-            except: pass
-
-    t = threading.Thread(target=_process_bg, daemon=True)
-    t.start()
-    return jsonify({"type": "accepted", "file": fn})
+    try:
+        if suffix == ".pdf":
+            from pdf_processor import process_pdf
+            result = process_pdf(temp_path.as_posix(), uploader=uploader, source_name=fn)
+            return jsonify({"type":"pdf","name":result.get("pdf_name",""),"page_count":result.get("page_count",0),"summary":str(result.get("summary","")),"image_count":result.get("image_count",0),"indexed_count":result.get("indexed_count",0)})
+        elif suffix == ".docx":
+            from docx_processor import process_docx
+            result = process_docx(temp_path.as_posix(), uploader=uploader, source_name=fn)
+            return jsonify({"type":"docx","name":result.get("docx_name",""),"summary":str(result.get("summary","")),"image_count":result.get("image_count",0),"indexed_count":len(result.get("image_results",[]))})
+        else:
+            from upload_test import process_image
+            r = process_image(str(temp_path), uploader=uploader, source_file=fn)
+            return jsonify({"type":"image","id":r.get("id"),"file_name":r.get("file_name"),"file_url":r.get("file_path"),"thumbnail_url":r.get("thumbnail_path"),"description":r.get("description",""),"uploader":uploader,"embedding_dim":2048})
+    except Exception as e:
+        import traceback as _tb2
+        _tb2.print_exc()
+        return jsonify({"error": str(e)}), 500
 
 
 @app.route("/api/search", methods=["POST"])
@@ -247,27 +284,29 @@ def api_search():
     if not raw_query:
         return jsonify({"error": "Missing query parameter"}), 400
 
-    # 1. LLM [CN] → [CN]
-    parsed = parse_query(raw_query)
+    # 1. DeepSeek query parsing (fast from China)
+    import httpx as _httpx
+    parsed = {"query": raw_query, "uploader": None, "date_from": None, "date_to": None}
+    try:
+        ds_resp = _httpx.post('https://api.deepseek.com/v1/chat/completions',
+            headers={'Authorization': f'Bearer sk-2cd1cbfa456a4d4ca5f974d2913dd2c1', 'Content-Type': 'application/json'},
+            json={'model':'deepseek-chat', 'messages':[{'role':'system','content':'你是搜索语句解析器。去掉量词(张/个/份/篇/条/款/种)、口语词(给我/我要/帮我/我想/看看/搜/找/有没有)和语气词，保留核心搜索词(空格分隔)和过滤条件。只输出JSON：{"query":"核心词","uploader":null或名字,"date_from":null或YYYY-MM-DD,"date_to":null或YYYY-MM-DD}'},{'role':'user','content': raw_query}], 'max_tokens':100},
+            timeout=5)
+        if ds_resp.status_code == 200:
+            import json as _j2
+            p = _j2.loads(ds_resp.json()['choices'][0]['message']['content'].strip())
+            parsed.update(p)
+    except Exception: pass
     search_query = parsed["query"]
 
     # 2. [CN]LLM [CN] + [CN]
     filters = {}
-    # [CN]
-    if body.get("uploader"):
-        filters["uploader"] = body["uploader"]
-    elif parsed.get("uploader"):
-        filters["uploader"] = parsed["uploader"]
-
-    if body.get("date_from"):
-        filters["date_from"] = body["date_from"]
-    elif parsed.get("date_from"):
-        filters["date_from"] = parsed["date_from"]
-
-    if body.get("date_to"):
-        filters["date_to"] = body["date_to"]
-    elif parsed.get("date_to"):
-        filters["date_to"] = parsed["date_to"]
+    if body.get("uploader"): filters["uploader"] = body["uploader"]
+    elif parsed.get("uploader"): filters["uploader"] = parsed["uploader"]
+    if body.get("date_from"): filters["date_from"] = body["date_from"]
+    elif parsed.get("date_from"): filters["date_from"] = parsed["date_from"]
+    if body.get("date_to"): filters["date_to"] = body["date_to"]
+    elif parsed.get("date_to"): filters["date_to"] = parsed["date_to"]
 
     try:
         results = search_similar(search_query, top_n=top_n, filters=(filters if filters else None))

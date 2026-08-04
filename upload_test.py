@@ -362,21 +362,23 @@ def search_similar(query: str, top_n: int = 3, filters: dict = None) -> list[dic
         return []
 
     # Source document boosting: pull in same-source images
-    from supabase_client import get_supabase
-    supabase = get_supabase()
+    from supabase_client import get_all_images as _ga
     seen_ids = {r["id"] for r in results}
+    all_imgs = _ga()
+    source_map = {}
+    for img in all_imgs:
+        sf = img.get("source_file", "") or ""
+        if sf not in source_map:
+            source_map[sf] = []
+        source_map[sf].append(img)
     boosted = []
     for r in results:
         boosted.append(r)
         sf = r.get("source_file", "")
-        if sf and len(boosted) < top_n * 3:
-            # Get siblings from same source doc
-            siblings = supabase.table("images").select(
-                "id, file_name, file_path, thumbnail_path, uploader, upload_time, description, extra_description, source_file, source_url"
-            ).eq("source_file", sf).is_("duplicate_of", "null").execute()
-            for sib in (siblings.data or []):
-                if sib["id"] not in seen_ids:
-                    sib["similarity"] = round(r["similarity"] * 0.95, 4)  # slightly lower than match
+        if sf and sf in source_map and len(boosted) < top_n * 3:
+            for sib in source_map[sf]:
+                if sib["id"] not in seen_ids and not sib.get("duplicate_of"):
+                    sib["similarity"] = round(r["similarity"] * 0.95, 4)
                     sib["boosted"] = True
                     boosted.append(sib)
                     seen_ids.add(sib["id"])
