@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="icon" href="/logo-small.png" type="image/png">
 <title>京东健康素材图库（测试版） — Search</title>
 <style>
   :root {
@@ -21,10 +22,10 @@
   }
   .page-wrapper { width: 100%; max-width: 760px; }
   .global-header { margin-bottom: 24px; padding-left: 8px; display:flex; align-items:center; gap:28px; }
-  .global-header .logo { width:64px; height:64px; flex-shrink:0; overflow:visible; }
-  .global-header .logo img { width:120px; height:auto; object-fit:contain; margin:-28px 0 0 -28px; }
+  .global-header .logo { width:48px; height:48px; flex-shrink:0; overflow:visible; }
+  .global-header .logo img { width:88px; height:auto; object-fit:contain; margin:-40px 0 0 -18px; }
   .global-header h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; letter-spacing: -0.5px; line-height:1; }
-  .global-header .subtitle { font-weight: 600; font-size: 0.85rem; color: var(--muted); }
+  .global-header .subtitle { font-weight: 600; font-size: 0.85rem; color: #888 !important; }
   .container { background: var(--card); border: var(--border-w) solid var(--border); border-radius: 12px; padding: 40px; box-shadow: var(--shadow); }
   .nav { display:flex; gap:16px; margin-bottom: 32px; border-bottom: var(--border-w) solid var(--border); padding-bottom: 24px; }
   .nav a {
@@ -101,7 +102,7 @@
     </div>
 
     <div class="search-box">
-      <input type="text" id="queryInput" placeholder="关键词用空格隔开，例如：云药箱 海报..." autofocus>
+      <input type="text" id="queryInput" placeholder="输入关键词搜索，用空格分隔效果更好…" autofocus>
       <button id="searchBtn" disabled>搜索</button>
     </div>
     <div class="hint">
