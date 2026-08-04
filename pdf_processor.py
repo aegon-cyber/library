@@ -146,22 +146,17 @@ def generate_pdf_summary(pdf_path: str | Path, max_chars: int = 300) -> str:
 
     text_for_summary = full_text[:4000] if len(full_text) > 4000 else full_text
 
+    import os as _os, httpx as _httpx
     try:
-        response = client.chat.completions.create(
-            model=SUMMARY_MODEL,
-            messages=[
-                {
-                    "role": "system",
-                    "content": (
-                        f"你是一个Doc summary助手。请根据文档内容生成一段{max_chars}字以内的中文摘要，"
-                        f"_"
-                        f"_"
-                    ),
-                },
-                {"role": "user", "content": text_for_summary},
-            ],
-        )
-        return response.choices[0].message.content
+        ds_key = _os.getenv("DS_API_KEY", "")
+        resp = _httpx.post("https://api.deepseek.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {ds_key}", "Content-Type": "application/json"},
+            json={"model":"deepseek-v4-flash", "messages":[
+                {"role":"system","content":f"你是一个文档摘要助手。请根据文档内容生成一段{max_chars}字以内的中文摘要，重点提取核心事实：涉及人物、关键事件、数据指标、结论观点。不要评价，只输出事实。"},
+                {"role":"user","content": text_for_summary}
+            ], "max_tokens":400},
+            timeout=30)
+        return resp.json()["choices"][0]["message"]["content"]
     except Exception as e:
         print(f"   Warning: AI summary generation failed ({e})_{max_chars}_")
         return full_text[:max_chars]

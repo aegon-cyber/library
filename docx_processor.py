@@ -129,23 +129,17 @@ def generate_docx_summary(docx_path: str | Path, max_chars: int = 300) -> str:
     # [CN] token[CN]
     text_for_summary = full_text[:3000] if len(full_text) > 3000 else full_text
 
+    import os as _os, httpx as _httpx
     try:
-        response = client.chat.completions.create(
-            model=SUMMARY_MODEL,
-            messages=[
-                {
-                    "role": "system",
-                    "content": f"你是一个新闻Doc summary助手。请根据文档内容生成一段{max_chars}字以内的中文摘要，"
-                           f"_"
-                           f"_"
-                },
-                {
-                    "role": "user",
-                    "content": text_for_summary
-                }
-            ]
-        )
-        summary = response.choices[0].message.content
+        ds_key = _os.getenv("DS_API_KEY", "")
+        resp = _httpx.post("https://api.deepseek.com/v1/chat/completions",
+            headers={"Authorization": f"Bearer {ds_key}", "Content-Type": "application/json"},
+            json={"model":"deepseek-v4-flash", "messages":[
+                {"role":"system","content":f"你是一个文档摘要助手。请根据文档内容生成一段{max_chars}字以内的中文摘要，重点提取核心事实：涉及人物、关键事件、数据指标、结论观点。不要评价，只输出事实。"},
+                {"role":"user","content": text_for_summary}
+            ], "max_tokens":400},
+            timeout=30)
+        summary = resp.json()["choices"][0]["message"]["content"]
         return summary
     except Exception as e:
         print(f"   Warning: AI summary generation failed ({e})_300_")

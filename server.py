@@ -290,7 +290,7 @@ def api_search():
     try:
         ds_resp = _httpx.post('https://api.deepseek.com/v1/chat/completions',
             headers={'Authorization': 'Bearer ' + (os.getenv('DS_API_KEY') or ''), 'Content-Type': 'application/json'},
-            json={'model':'deepseek-chat', 'messages':[{'role':'system','content':'你是搜索语句解析器。去掉量词(张/个/份/篇/条/款/种)、口语词(给我/我要/帮我/我想/看看/搜/找/有没有)和语气词，保留核心搜索词(空格分隔)和过滤条件。只输出JSON：{"query":"核心词","uploader":null或名字,"date_from":null或YYYY-MM-DD,"date_to":null或YYYY-MM-DD}'},{'role':'user','content': raw_query}], 'max_tokens':100},
+            json={'model':'deepseek-v4-flash', 'messages':[{'role':'system','content':'你是搜索语句解析器。去掉量词(张/个/份/篇/条/款/种)、口语词(给我/我要/帮我/我想/看看/搜/找/有没有)和语气词，保留核心搜索词(空格分隔)和过滤条件。只输出JSON：{"query":"核心词","uploader":null或名字,"date_from":null或YYYY-MM-DD,"date_to":null或YYYY-MM-DD}'},{'role':'user','content': raw_query}], 'max_tokens':100},
             timeout=5)
         if ds_resp.status_code == 200:
             import json as _j2

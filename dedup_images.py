@@ -20,7 +20,7 @@ load_dotenv()
 
 import httpx
 from PIL import Image
-from supabase_client import get_supabase, get_all_images
+from supabase_client import get_all_images
 
 
 def pixel_hash_from_url(url: str, timeout: int = 30) -> str | None:
@@ -89,7 +89,6 @@ def find_duplicates():
 
     # 4. 标记重复（每组保留最早的一张）
     print("\n[4/4] 标记重复...")
-    supabase = get_supabase()
     total_marked = 0
 
     for ph, group in dup_groups.items():
@@ -107,9 +106,13 @@ def find_duplicates():
                   f"({dup.get('uploader','?')} @ {dup.get('upload_time','?')[:10]})")
 
             try:
-                supabase.table("images").update(
-                    {"duplicate_of": primary["id"]}
-                ).eq("id", dup["id"]).execute()
+                from supabase_client import _get_db
+                conn = _get_db()
+                cur = conn.cursor()
+                cur.execute("UPDATE images SET duplicate_of = %s WHERE id = %s", (primary["id"], dup["id"]))
+                conn.commit()
+                cur.close()
+                conn.close()
                 total_marked += 1
             except Exception as e:
                 print(f"      ❌ 标记失败: {e}")
