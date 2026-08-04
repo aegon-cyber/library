@@ -9,6 +9,7 @@
     --bg: #F8F8F8; --card: #FFFFFF; --border: #1a1a1a; --text: #1a1a1a;
     --red: #C41230; --red-light: #FFF0F2; --red-dark: #8B0E22;
     --border-w: 2px; --shadow: 6px 6px 0px #1a1a1a; --shadow-sm: 3px 3px 0px #1a1a1a;
+    --muted: #888;
   }
   * { margin:0; padding:0; box-sizing:border-box; }
   body {
@@ -19,14 +20,14 @@
     background-image: radial-gradient(#ddd 1px, transparent 1px);
     background-size: 20px 20px;
   }
-  .page-wrapper { width: 100%; max-width: 800px; }
+  .page-wrapper { width: 100%; max-width: 860px; }
   .global-header { margin-bottom: 24px; padding-left: 8px; display:flex; align-items:center; gap:28px; }
   .global-header .logo { width:64px; height:64px; flex-shrink:0; overflow:visible; }
   .global-header .logo img { width:120px; height:auto; object-fit:contain; margin:-28px 0 0 -28px; }
   .global-header h1 { font-size: 1.8rem; font-weight: 900; margin-bottom: 4px; text-transform: uppercase; letter-spacing: -0.5px; line-height:1; }
   .global-header .subtitle { font-weight: 600; font-size: 0.85rem; color: var(--muted); }
   .container { background: var(--card); border: var(--border-w) solid var(--border); border-radius: 12px; padding: 40px; box-shadow: var(--shadow); }
-  .nav { display:flex; gap:16px; margin-bottom: 32px; border-bottom: var(--border-w) solid var(--border); padding-bottom: 24px; }
+  .nav { display:flex; gap:16px; margin-bottom: 24px; border-bottom: var(--border-w) solid var(--border); padding-bottom: 24px; }
   .nav a {
     color: var(--text); text-decoration:none; padding: 12px 32px;
     border: var(--border-w) solid var(--border); border-radius: 8px; font-size: 1rem; font-weight: 900;
@@ -35,16 +36,41 @@
   .nav a:hover { background: var(--red-light); transform: translate(-2px, -2px); box-shadow: 6px 6px 0px #000; }
   .nav a.active { background: #fff; color: var(--red); border-color: var(--red); box-shadow: 2px 2px 0px var(--red); transform: translate(2px, 2px); }
 
-  .tabs { display:flex; gap:8px; margin-bottom: 20px; flex-wrap:wrap; }
+  /* ── Filters ── */
+  .filter-bar { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; align-items:center; }
+  .filter-bar select, .filter-bar input {
+    padding:6px 12px; border:var(--border-w) solid var(--border); border-radius:6px;
+    font-size:0.85rem; font-weight:700; background:#fff; outline:none; height:34px;
+    font-family:inherit;
+  }
+  .filter-bar .fbtn {
+    padding:6px 12px; border:var(--border-w) solid var(--border); border-radius:6px;
+    font-size:0.85rem; font-weight:700; background:#fff; outline:none; height:34px;
+    font-family:inherit; cursor:pointer; -webkit-appearance:none; appearance:none;
+    background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23333' d='M6 8L1 3h10z'/%3E%3C/svg%3E\");
+    background-repeat:no-repeat; background-position:right 10px center; padding-right:28px;
+  }
+  .filter-bar select:focus, .filter-bar input:focus { border-color:var(--red); }
+  .filter-bar .view-toggle { margin-left:auto; display:flex; gap:4px; }
+  .filter-bar .vbtn {
+    padding:6px 14px; border:var(--border-w) solid var(--border); border-radius:6px;
+    background:#fff; cursor:pointer; font-size:0.85rem; font-weight:700; height:34px;
+    font-family:inherit;
+  }
+  .filter-bar .vbtn.on { background:var(--red); color:#fff; }
+
+  /* ── Type tabs ── */
+  .tabs { display:flex; gap:6px; margin-bottom:16px; flex-wrap:wrap; }
   .tab {
-    padding:10px 20px; border:var(--border-w) solid var(--border); border-radius:6px;
-    font-size:0.85rem; cursor:pointer; font-weight:800; background:var(--bg);
+    padding:8px 16px; border:var(--border-w) solid var(--border); border-radius:6px;
+    font-size:0.82rem; cursor:pointer; font-weight:800; background:var(--bg);
     box-shadow: var(--shadow-sm); transition:all .1s;
   }
-  .tab:hover { background:var(--red-light); border-color:var(--red); transform:translate(-2px,-2px); box-shadow:6px 6px 0px #000; }
+  .tab:hover { background:var(--red-light); transform:translate(-2px,-2px); box-shadow:6px 6px 0px #000; }
   .tab.on { background:#fff; color:var(--red); border-color:var(--red); box-shadow:2px 2px 0px #000; transform:translate(2px,2px); }
-  .tab .count { font-size:0.7rem; margin-left:4px; opacity:0.6; }
+  .tab .count { font-size:0.7rem; opacity:0.6; }
 
+  /* ── Card View ── */
   .file-card {
     display: flex; gap: 16px; background: var(--card);
     border: var(--border-w) solid var(--border); border-radius: 8px;
@@ -62,14 +88,37 @@
   .thumb.pdf { background:var(--red); color:#fff; }
   .thumb.img { background:var(--red-light); }
   .file-card .info { flex:1; min-width:0; }
-  .file-card .name { font-weight:900; font-size:0.95rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:4px; }
-  .file-card .meta { font-size:0.8rem; font-weight:700; display:flex; gap:14px; flex-wrap:wrap; }
-  .file-card .img-count { background:var(--red); color:#fff; border:2px solid #000; padding:4px 10px; border-radius:4px; font-weight:900; font-size:0.8rem; flex-shrink:0; align-self:center; box-shadow:2px 2px 0px #000; }
+  .file-card .name { font-weight:900; font-size:0.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:2px; }
+  .file-card .meta { font-size:0.78rem; font-weight:700; display:flex; gap:12px; color:var(--muted); }
+  .file-card .img-count { background:var(--red-light); color:#000; border:2px solid #000; padding:4px 0; border-radius:4px; font-weight:900; font-size:0.8rem; flex-shrink:0; align-self:center; box-shadow:2px 2px 0px #000; cursor:pointer; transition:all .1s; width:72px; text-align:center; white-space:nowrap; }
+  .list-view .file-card .img-count { width:56px; }
+  .file-card .img-count:hover { background:var(--red); color:#fff; }
   .file-card .dl-btn { flex-shrink:0; align-self:center; }
-  .file-card .dl-btn a { background:var(--red-light); color:#000; text-decoration:none; border:2px solid #000; padding:6px 14px; font-weight:900; font-size:0.85rem; border-radius:6px; box-shadow:2px 2px 0px #000; transition:all .1s; }
+  .file-card .dl-btn a { background:var(--red); color:#fff; text-decoration:none; border:2px solid #000; padding:6px 14px; font-weight:900; font-size:0.85rem; border-radius:6px; box-shadow:2px 2px 0px #000; transition:all .1s; white-space:nowrap; }
   .file-card .dl-btn a:hover { transform:translate(-2px,-2px); box-shadow:4px 4px 0px #000; }
 
-  .empty { text-align:center; padding:60px 0; font-weight:900; font-size:1.1rem; }
+  /* ── List View ── */
+  .list-view .file-card { padding:10px 16px; margin-bottom:6px; align-items:center; }
+  .list-view .file-card .thumb { width:36px; height:36px; border-radius:4px; font-size:1rem; }
+  .list-view .file-card .name { font-size:0.85rem; }
+  .list-view .file-card .meta { display:none; }
+  .list-view .file-card .list-meta { font-size:0.78rem; font-weight:700; color:var(--muted); white-space:nowrap; margin-left:auto; display:flex; gap:16px; align-items:center; }
+  .list-view .file-card .img-count { font-size:0.72rem; padding:3px 8px; }
+  .list-view .file-card .dl-btn a { font-size:0.75rem; padding:4px 10px; }
+
+  /* ── Image Popup Modal ── */
+  .modal-overlay { display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.85); z-index:1000; justify-content:center; align-items:center; }
+  .modal-overlay.show { display:flex; }
+  .modal-content { background:var(--card); border:var(--border-w) solid var(--border); border-radius:12px; padding:30px; max-width:90vw; max-height:85vh; overflow-y:auto; box-shadow:var(--shadow); }
+  .modal-content h3 { font-size:1.1rem; margin-bottom:16px; }
+  .modal-close { float:right; cursor:pointer; font-size:1.5rem; font-weight:900; color:var(--muted); }
+  .modal-close:hover { color:var(--red); }
+  .modal-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(150px,1fr)); gap:12px; }
+  .modal-grid img { width:100%; border:2px solid var(--border); border-radius:6px; cursor:pointer; transition:all .1s; }
+  .modal-grid img:hover { transform:scale(1.05); box-shadow:var(--shadow-sm); }
+  .modal-grid .img-name { font-size:0.7rem; text-align:center; margin-top:4px; }
+
+  .empty { text-align:center; padding:60px 0; font-weight:900; font-size:1.05rem; }
   .spinner { display:none; margin:40px auto; width:36px; height:36px; border:4px solid var(--border); border-top-color:var(--red); border-radius:50%; animation:spin .6s linear infinite; }
   @keyframes spin { to{transform:rotate(360deg);} }
 </style>
@@ -77,11 +126,11 @@
 <body>
 <div class="page-wrapper">
   <div class="global-header">
-        <div class="logo"><img src="/logo-small.png" alt="JD"></div>
-        <div>
-    <h1>京东健康素材图库</h1>
-    <div class="subtitle">已索引文件浏览器</div>
-        </div>
+    <div class="logo"><img src="/logo-small.png" alt="JD"></div>
+    <div>
+      <h1>京东健康素材图库</h1>
+      <div class="subtitle">已索引文件浏览器</div>
+    </div>
   </div>
   <div class="container">
     <div class="nav">
@@ -90,11 +139,21 @@
       <a href="/library-web/" class="active">文件库</a>
     </div>
 
+    <!-- Filters -->
+    <div class="filter-bar">
+      <select id="filterUploader"><option value="">全部上传人</option></select>
+      <div class="view-toggle">
+        <button class="vbtn on" data-view="card" title="卡片视图">▦</button>
+        <button class="vbtn" data-view="list" title="列表视图">☰</button>
+      </div>
+    </div>
+
+    <!-- Type tabs -->
     <div class="tabs" id="tabs">
-      <button class="tab on" data-type="docx">📄 DOCX<span class="count" id="cnt-docx"></span></button>
-      <button class="tab" data-type="pdf">📕 PDF<span class="count" id="cnt-pdf"></span></button>
-      <button class="tab" data-type="image">🖼 图片<span class="count" id="cnt-image"></span></button>
-      <button class="tab" data-type="all">全部<span class="count" id="cnt-all"></span></button>
+      <button class="tab on" data-type="docx">📄 DOCX<span class="count"></span></button>
+      <button class="tab" data-type="pdf">📕 PDF<span class="count"></span></button>
+      <button class="tab" data-type="image">🖼 图片<span class="count"></span></button>
+      <button class="tab" data-type="all">全部<span class="count"></span></button>
     </div>
 
     <div class="spinner" id="spinner"></div>
@@ -103,10 +162,37 @@
   </div>
 </div>
 
+<!-- Image popup modal -->
+<div class="modal-overlay" id="imageModal" onclick="event.target===this&&closeModal()">
+  <div class="modal-content">
+    <span class="modal-close" onclick="closeModal()">×</span>
+    <h3 id="modalTitle"></h3>
+    <div class="modal-grid" id="modalGrid"></div>
+  </div>
+</div>
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.95);z-index:2000;cursor:pointer;align-items:center;justify-content:center;">
+  <img id="lightboxImg" src="" style="max-width:94vw;max-height:94vh;border-radius:8px;border:4px solid #000;">
+</div>
+
 <script>
 const API = '';
 let allGroups = [];
 let currentType = 'docx';
+let currentView = 'card';
+
+// ── Load ──
+(async () => {
+  try {
+    const resp = await fetch(`${API}/api/images`);
+    const images = await resp.json();
+    if (Array.isArray(images)) {
+      allGroups = groupBySource(images);
+      populateUploaders(images);
+      renderAll();
+    }
+  } catch(e) { document.getElementById('empty').innerHTML = '<p>加载失败</p>'; }
+})();
 
 function groupBySource(images) {
   const groups = {};
@@ -124,59 +210,111 @@ function groupBySource(images) {
   return Object.values(groups).sort((a,b) => (b.upload_time||'').localeCompare(a.upload_time||''));
 }
 
+function populateUploaders(images) {
+  const uids = [...new Set(images.map(i => i.uploader).filter(Boolean))].sort();
+  const _sel = document.getElementById('filterUploader');
+  uids.forEach(u => { const o = document.createElement('option'); o.value = u; o.textContent = u; _sel.appendChild(o); });
+}
+
+// ── Filters ──
+function getFiltered() {
+  let groups = currentType === 'all' ? allGroups : allGroups.filter(g => g.type === currentType);
+  const u = document.getElementById('filterUploader').value;
+  if (u) groups = groups.filter(g => g.uploader === u);
+  return groups;
+}
+
+function renderAll() { renderTabs(); renderList(); }
+
+// ── Tabs ──
 function renderTabs() {
   const counts = { docx:0, pdf:0, image:0 };
   allGroups.forEach(g => { counts[g.type] = (counts[g.type]||0) + 1; });
-  document.getElementById('cnt-docx').textContent = counts.docx || '';
-  document.getElementById('cnt-pdf').textContent = counts.pdf || '';
-  document.getElementById('cnt-image').textContent = counts.image || '';
-  document.getElementById('cnt-all').textContent = allGroups.length || '';
-}
-
-function renderList() {
-  const filtered = currentType === 'all' ? allGroups : allGroups.filter(g => g.type === currentType);
-  const list = document.getElementById('list');
-  const empty = document.getElementById('empty');
-  if (!filtered.length) { empty.innerHTML = '<p>此分类暂无文件</p>'; empty.style.display='block'; list.innerHTML=''; return; }
-  empty.style.display='none';
-
-  const iconMap = { docx:'📄', pdf:'📕', image:'🖼' };
-  list.innerHTML = filtered.map(g => {
-    const time = (g.upload_time||'').slice(0,10);
-    const imgCount = g.images.length;
-    const thumb = g.thumbnail || '';
-    const dlUrl = g.url || (g.images[0]?.file_path || '');
-    return `<div class="file-card">
-      <div class="thumb ${g.type}">${thumb ? `<img src="${thumb}">` : iconMap[g.type]}</div>
-      <div class="info">
-        <div class="name">${g.name || '(未命名)'}</div>
-        <div class="meta"><span>${g.uploader||'-'}</span><span>${time||'-'}</span></div>
-      </div>
-      <div class="img-count">${imgCount} 张图</div>
-      ${dlUrl ? `<div class="dl-btn"><a href="${dlUrl}" download>⬇ 下载</a></div>` : ''}
-    </div>`;
-  }).join('');
+  document.querySelectorAll('.tab').forEach(t => {
+    const c = t.dataset.type === 'all' ? allGroups.length : (counts[t.dataset.type]||0);
+    t.querySelector('.count').textContent = c ? ` (${c})` : '';
+  });
 }
 
 document.getElementById('tabs').addEventListener('click', e => {
-  const tab = e.target.closest('.tab');
-  if (!tab) return;
+  const tab = e.target.closest('.tab'); if (!tab) return;
   currentType = tab.dataset.type;
   document.querySelectorAll('.tab').forEach(t => t.classList.toggle('on', t === tab));
   renderList();
 });
 
-(async () => {
-  try {
-    const resp = await fetch(`${API}/api/images`);
-    const images = await resp.json();
-    if (Array.isArray(images)) {
-      allGroups = groupBySource(images);
-      renderTabs();
-      renderList();
-    }
-  } catch(e) { document.getElementById('empty').innerHTML = '<p>加载失败</p>'; }
-})();
+// ── Image popup via delegation ──
+document.getElementById('list').addEventListener('click', e => {
+  const badge = e.target.closest('.img-count, .thumb');
+  if (!badge) return;
+  const idx = parseInt(badge.dataset.idx);
+  const g = window._filtered[idx];
+  if (!g) return;
+  openImageModal(g.name || '(未命名)', g.images.map(i => ({name:i.file_name,thumb:i.thumbnail_path,full:i.file_path})));
+});
+
+// ── Filters change ──
+['filterUploader'].forEach(id => {
+  document.getElementById(id).addEventListener('change', renderList);
+  document.getElementById(id).addEventListener('input', renderList);
+});
+
+// ── View toggle ──
+document.querySelector('.view-toggle').addEventListener('click', e => {
+  const btn = e.target.closest('.vbtn'); if (!btn) return;
+  currentView = btn.dataset.view;
+  document.querySelectorAll('.vbtn').forEach(b => b.classList.toggle('on', b === btn));
+  document.getElementById('list').classList.toggle('list-view', currentView === 'list');
+  renderList();
+});
+
+// ── Render ──
+function renderList() {
+  const filtered = getFiltered();
+  const list = document.getElementById('list');
+  const empty = document.getElementById('empty');
+  if (!filtered.length) { empty.innerHTML = '<p>没有匹配文件</p>'; empty.style.display='block'; list.innerHTML=''; return; }
+  empty.style.display='none';
+
+  const iconMap = { docx:'📄', pdf:'📕', image:'🖼' };
+  const showListMeta = currentView === 'list';
+
+  window._filtered = filtered; // stash for click handler
+  list.innerHTML = filtered.map((g, idx) => {
+    const time = (g.upload_time||'').slice(0,10);
+    const imgCount = g.images.length;
+    const thumb = g.thumbnail || '';
+    const dlUrl = g.url || (g.images[0]?.file_path || '');
+    const listMeta = showListMeta ? `<div class="list-meta"><span>${g.uploader||'-'}</span><span>${time||'-'}</span></div>` : '';
+    return `<div class="file-card">
+      <div class="thumb ${g.type}" data-idx="${idx}" style="cursor:pointer;">${thumb ? `<img src="${thumb}">` : iconMap[g.type]}</div>
+      <div class="info">
+        <div class="name">${g.name || '(未命名)'}</div>
+        ${showListMeta ? '' : `<div class="meta"><span>${g.uploader||'-'}</span><span>${time||'-'}</span></div>`}
+      </div>
+      ${listMeta}
+      <div class="img-count" data-idx="${idx}">${imgCount} 张图</div>
+      ${dlUrl ? `<div class="dl-btn"><a href="${dlUrl}" download>⬇ 下载</a></div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+// ── Image popup modal ──
+function openImageModal(title, images) {
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalGrid').innerHTML = images.map(i => `
+    <div><img src="${i.thumb||i.full}" onclick="openLightbox('${i.full}')" onerror="this.style.display='none'"><div class="img-name">${i.name}</div></div>
+  `).join('');
+  document.getElementById('imageModal').classList.add('show');
+}
+function closeModal() { document.getElementById('imageModal').classList.remove('show'); }
+
+// ── Lightbox ──
+function openLightbox(url) {
+  document.getElementById('lightboxImg').src = url;
+  document.getElementById('lightbox').style.display = 'flex';
+}
+function closeLightbox() { document.getElementById('lightbox').style.display = 'none'; }
 </script>
 </body>
 </html>

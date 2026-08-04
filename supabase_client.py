@@ -20,12 +20,12 @@ DB_HOST = os.getenv("DB_HOST", "localhost")
 DB_PORT = int(os.getenv("DB_PORT", "5432"))
 DB_NAME = os.getenv("DB_NAME", "library")
 DB_USER = os.getenv("DB_USER", "postgres")
-DB_PASS = os.getenv("DB_PASS", "Importantthings1")
+DB_PASS = os.getenv("DB_PASS", "")
 
 # ── OSS config (S3-compatible) ──
 OSS_ENDPOINT = os.getenv("OSS_ENDPOINT", "https://s3.cn-north-1.jdcloud-oss.com")
-OSS_ACCESS_KEY = os.getenv("OSS_ACCESS_KEY", "JDC_78A5C48965E8C5EDECF5882A1E1D")
-OSS_SECRET_KEY = os.getenv("OSS_SECRET_KEY", "0792A10A3F5C8488BCC4A3B7DD6BB428")
+OSS_ACCESS_KEY = os.getenv("OSS_ACCESS_KEY", "")
+OSS_SECRET_KEY = os.getenv("OSS_SECRET_KEY", "")
 OSS_BUCKET = os.getenv("OSS_BUCKET", "library-assets")
 
 

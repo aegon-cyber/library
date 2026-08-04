@@ -122,6 +122,11 @@
       <a href="/library-web/">文件库</a>
     </div>
 
+    <div class="form-group">
+      <label>操作人 ID</label>
+      <input type="text" id="uploader" placeholder="输入操作人标识...">
+    </div>
+
     <div class="dropzone" id="dropzone">
       <div class="icon" >📁</div>
       <h3>拖拽文件到此处</h3>
@@ -134,11 +139,6 @@
       <button class="clear-btn" id="clearAllBtn">清空全部</button>
     </div>
     <div class="queue" id="queue"></div>
-
-    <div class="form-group">
-      <label>操作人 ID</label>
-      <input type="text" id="uploader" placeholder="输入操作人标识..." value="test_user">
-    </div>
 
     <button class="primary" id="uploadBtn" disabled>全部上传</button>
     <div class="results" id="uploadResults"></div>
@@ -158,6 +158,14 @@ const uploadResults = document.getElementById('uploadResults');
 
 let fileQueue = [];
 let isProcessing = false;
+
+// ── Uploader memory ──
+const uploaderInput = document.getElementById('uploader');
+const saved = localStorage.getItem('uploader_id');
+if (saved) uploaderInput.value = saved;
+uploaderInput.addEventListener('input', () => {
+  localStorage.setItem('uploader_id', uploaderInput.value);
+});
 
 window.addEventListener('beforeunload', e => {
   if (isProcessing) { e.preventDefault(); e.returnValue = 'Upload in progress!'; }

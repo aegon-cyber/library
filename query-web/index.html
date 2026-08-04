@@ -139,6 +139,18 @@ queryInput.addEventListener('input', () => searchBtn.disabled = !queryInput.valu
 queryInput.addEventListener('keydown', e => { if (e.key === 'Enter' && queryInput.value.trim()) doSearch(); });
 searchBtn.addEventListener('click', doSearch);
 
+// Download via delegation (cross-origin friendly)
+document.getElementById('searchResults').addEventListener('click', e => {
+  const btn = e.target.closest('.download-btn');
+  if (!btn) return;
+  e.preventDefault();
+  const url = btn.dataset.url;
+  const name = btn.dataset.name;
+  const dlUrl = `${API}/dl?url=${encodeURIComponent(url)}&name=${encodeURIComponent(name)}`;
+  const a = document.createElement('a');
+  a.href = dlUrl; a.target = '_blank'; a.click();
+});
+
 (async () => {
   try {
     const r = await fetch(`${API}/api/images`);
@@ -198,7 +210,7 @@ async function doSearch() {
           <div class="search-meta-row">
             <span class="search-tag">${r.uploader||'?'}</span>
             <span class="search-tag">${(r.upload_time||'').slice(0,10)}</span>
-            <a href="${r.file_path}" download="${r.file_name}" class="download-btn" title="下载原图">⬇ 下载</a>
+            <a href="#" class="download-btn" data-url="${r.file_path}" data-name="${r.file_name}" title="下载原图">⬇ 下载</a>
           </div>
         </div>
       </div>`;
